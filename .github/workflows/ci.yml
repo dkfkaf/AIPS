@@ -1,0 +1,67 @@
+name: C++ build and checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libpcap-dev libnetfilter-queue-dev nlohmann-json3-dev \
+            libspdlog-dev libgtest-dev clang-format-18 clang-tidy-18
+      - name: Configure
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DBUILD_TESTING=ON
+          -DMINIIPS_ENABLE_CLANG_TIDY=ON
+      - name: Check format
+        run: cmake --build build --target format-check
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Test
+        run: ctest --test-dir build --output-on-failure --no-tests=error
+      - name: CLI smoke check
+        run: |
+          ./build/miniips --help
+          ./build/miniips --version
+
+  sanitizers:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            libpcap-dev libnetfilter-queue-dev nlohmann-json3-dev \
+            libspdlog-dev libgtest-dev
+      - name: Configure
+        run: >-
+          cmake -S . -B build-sanitize -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_TESTING=ON
+          -DMINIIPS_ENABLE_SANITIZERS=ON
+      - name: Build
+        run: cmake --build build-sanitize --parallel 2
+      - name: Test
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build-sanitize --output-on-failure --no-tests=error

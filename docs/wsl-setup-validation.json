@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-03",
+  "scope": "WSL2/Ubuntu setup and A0/A1 validation attempt",
+  "is_administrator": false,
+  "commands": [
+    {
+      "command": "wsl.exe --version",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "시스템에서 파일에 액세스할 수 없습니다."
+    },
+    {
+      "command": "wsl.exe --list --verbose",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "시스템에서 파일에 액세스할 수 없습니다."
+    },
+    {
+      "command": "wsl.exe --install -d Ubuntu-24.04 --no-launch",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "시스템에서 파일에 액세스할 수 없습니다."
+    }
+  ],
+  "ubuntu_package_install": "not-started: WSL invocation failed",
+  "project_build": "not-started: Linux environment inaccessible",
+  "ctest": "not-started: Linux environment inaccessible",
+  "cause": "WSL invocation returned an OS file-access error; administrator token absent. Exact root cause unconfirmed."
+}

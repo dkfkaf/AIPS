@@ -1,0 +1,51 @@
+[
+  {
+    "command": "cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term 'cmake' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": "cmake --build build --parallel 2",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term 'cmake' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": ".\\build\\miniips --help",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term '.\\build\\miniips' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": ".\\build\\miniips --version",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term '.\\build\\miniips' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": "ctest --test-dir build --output-on-failure",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term 'ctest' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": "clang-format --dry-run --Werror include/miniips/cli.hpp src/cli.cpp src/main.cpp tests/test_cli.cpp",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term 'clang-format' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  },
+  {
+    "command": "clang-tidy -p build src/cli.cpp src/main.cpp",
+    "status": "not-started",
+    "exit_code": null,
+    "error_type": "CommandNotFoundException",
+    "output": "The term 'clang-tidy' is not recognized as a name of a cmdlet, function, script file, or executable program.\r\nCheck the spelling of the name, or if a path was included, verify that the path is correct and try again."
+  }
+]
