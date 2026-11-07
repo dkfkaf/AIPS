@@ -1,5 +1,27 @@
 # 설계 결정
 
+## 사용자 진행 결정과 A4 — 2026-11-07
+
+**IPS 먼저 완성(A0~A8) → 사용자 자체 테스트 → 결과 확인과 AI 착수 지시 → AI 모델 개발(B0~B5) → 연동(C단계)** 순서를 사용자가 지정했다. A8의 개발자 검증만으로 B0를 자동 시작하지 않는다. AGENTS.md, PROJECT_SPEC.md, IMPLEMENTATION_PLAN.md, README에 같은 조건을 기록했다. 이 결정은 AI를 제거하는 것이 아니라 사용자 자체 테스트 이후로 착수 시점을 정한 것이다.
+
+사용자는 [기존 A4 설계](superpowers/specs/2026-11-07-a4-design.md)의 KMP 방식을 승인했다. Aho–Corasick은 다중 패턴의 타당한 대안이지만 이번에 도입하지 않으며 실제 성능 우위를 측정한 것으로 주장하지 않는다. 현재 폴더에서 직접 실행하고 기존 변경을 보존하며 자동 commit/push는 하지 않는다.
+
+### 검증과 정책
+
+룰 파일은 깊이/중복 키를 파싱 중 검사하고, 전체 필드/타입/범위/중복 SID를 검증한 뒤 불변 RuleSet으로 만든다. 임의의 Rule 벡터로 검증을 우회할 수 없다. 제한된 파일 전체가 유효해야 하며 disabled 룰도 예외가 아니다. KMP 실패 함수를 한 번 만들고 priority/sid 순서로 검색한다.
+
+packet은 현재 payload, stream은 새 연속 구간과 A3가 허용한 현재 payload 위치에 겹친 패턴을 검사한다. A3가 ByteRange를 제공하므로 시퀀스 해석을 중복 구현하지 않는다. 접두어/접미어 컨텍스트를 포함하되 갭을 가로지르지 않는다. 중복 발행 watermark와 terminal 판정을 분리해 같은 악성 세그먼트의 재전송이 Allow로 뒤집히지 않도록 한다. 순수 ACK나 무관한 새 suffix에 과거 stream 룰을 적용하지 않는다.
+
+대표 match는 관련 영역과 겹치는 가장 큰 end-offset이고 룰당 관측당 이벤트 하나다. 더 앞선 과거 위치도 watermark 이하이면 이벤트를 억제한다. 이는 occurrence별 완전 이력을 보관하지 않는 제한된 기본 억제 정책이다.
+
+### 상태와 CLI
+
+TCP Flow 메타데이터는 max_flows로, 방향별 uint64 배열은32 MiB 기본 예산으로 제한한다. 배열은 첫 stream 이벤트 직전에만 할당한다. 예산 부족을 정상 Allow나 무제한 이벤트로 숨기지 않고 분석 오류로 종료한다. 만료/EOF에 정리하고 원본 payload span은 저장하지 않는다.
+
+--rules는 선택 옵션이고 --rule-state-bytes는 함께 사용해야 한다. JSON 오류는 PCAP을 열기 전에 rule_error로 종료한다. 출력 message는 JSON 문자열 인코딩으로 제어문자를 escape하며 payload 원문은 출력하지 않는다. 실제 Drop·JSONL·AI는 구현하지 않는다. 기존 A3 경미 보류는 이번 범위 밖이다.
+
+최종 리뷰 뒤 현재 payload로 생성할 수 없는 재조립 조합을 직접 API가 거부하도록 보완했다. 허용 구간 길이는 payload 길이를 넘을 수 없고, 새 prefix가 늘 때 첫 새 바이트를 현재 허용 payload가 포함해야 한다. 빈 payload/disabled 방향이 새 구간을 주장할 수도 없다. 콘솔 메시지는 UTF-8 원문을 보관하되 ASCII JSON 표현과 별도 DEL escape로 출력해 C1·Unicode 줄/문단 구분자까지 보호한다. 한글 메시지도 콘솔에서는 Unicode escape로 표시된다.
+
 ## A3 — 2026-11-07
 
 사용자가 승인한 [설계](superpowers/specs/2026-11-07-a3-design.md)와 [실행 계획](superpowers/plans/2026-11-07-a3.md)에 따라 현재 폴더에서 직접 구현했다. A0~A2 미커밋 파일의 수정 전 복사본과 작업·검증 로그는 Git 제외인 `build-a3-work/`에 보관한다. 자동 커밋·push와 후속 A4 구현은 하지 않는다.

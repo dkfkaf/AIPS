@@ -1,5 +1,41 @@
 # 테스트 계획과 실제 검증
 
+## A4 최종 판정 — 2026-11-07
+
+**완료.** [승인 설계](superpowers/specs/2026-11-07-a4-design.md)에 따라 KMP 룰 엔진을 구현했다. 리뷰 중요2건을 수정한 최종 소스로 Debug·Release/clang-tidy·ASan/UBSan 각각184/184, 실패·skip0과 포맷 검사를 통과했다. 정상/악성 예시의 결정적 alert/pass/drop과 모든 룰 테스트를 실제 확인해 A4 인수 조건을 충족했다. 경미3건은 명시적으로 보류한다.
+
+| 검사 | 현재 결과 |
+| --- | --- |
+| 기존 A3 회귀 | 146개 보존 |
+| 새 로더 | 8개, 타입/필드/중복/정수/ASCII/UTF8/파일·깊이·룰 수 경계 subcase 통과 |
+| 새 룰 엔진 | 16개, 우선순위·재전송·ACK·겹침·상태 상한·만료·모순된 API 범위 거부 통과 |
+| 새 A3 관련 범위 | 4개, 허용/거부/wrap/갭/깊이/종료 범위 통과 |
+| 새 CLI | 10개, 선택 룰·오류 선행·fallback·expiry·Unicode 제어문자·출력 오류 통과 |
+| Debug | 184/184, 실패·skip0 |
+| Release/clang-tidy | 최종 빌드 성공, 184/184, 실패·skip0 |
+| ASan/UBSan | 최종 빌드 성공, 184/184, 실패·skip0 |
+| format-check | 통과 |
+| 최종 독립 리뷰 | Critical0, Important2 수정, Minor3 보류, 판단 보류 없음 |
+
+로더와 엔진 초기 RED는 새 헤더 부재로 컴파일이 실패한 것이며 런타임 실행으로 기록하지 않는다. CLI는 기존 A3 코드에서 실제8개 실패/기존 invalid-option1개 통과를 확인한 뒤 구현했다. 빈 함수나 기대값 변경으로 통과시키지 않았다.
+
+실제 프로세스에서 예시 HELLO stream alert는 events1/drop0, BLOCKME packet 룰은 events1/simulated_drops1, 우선순위 pass 룰은 Allow를 확인했다. HEL+LO 후 HEL 재전송과 순수 ACK는 events1/suppressed1/simulated_drops2였고 ACK는 Allow다. EOF state_bytes0, 예산7바이트는 detection_error/코드1, 잘못된 룰은 PCAP 열기 전 rule_error/코드1이었다. nobody(uid65534)의 packet drop 시뮬레이션도 확인했다.
+
+사용자 자체 테스트는 A0~A8 IPS 완성 뒤 별도로 진행한다. 이번 자동/합성 PCAP 검증을 사용자 자체 테스트의 완료로 기록하지 않는다. B0/AI는 미착수다. 원본 로그/기준선은 ignored build-a4-work/에 보관하며 원격 CI·실제 차단·성능 측정은 미실행이다.
+
+독립 fresh-context 리뷰(gpt-6-astra/high)는 모순된 직접 API 재조립 범위가 ACK를 Drop시키는 문제와 DEL/C1/Unicode 줄 구분자가 콘솔에 출력되는 문제를 재현했다. 회귀2개를 먼저 실행해2개 모두 실제 실패한 뒤 수정했다. 현재 payload 길이·새 연속 구간 첫 바이트와 허용 위치의 관계를 상태 변경 전에 검사하고, message를 DEL까지 포함한 ASCII JSON 표현으로 출력한다. 회귀2/2 GREEN과 전체 Debug184/184을 확인했다. 테스트 helper의 optional은 검사 후 반환하는 getter로 바꿔 정적 분석의 증명 경로를 명확히 했으며 입력/기대값/검사 설정은 유지했다.
+
+경미3건은 stream_evaluated의 window-availability 의미, 일부 오류의 실제 필드명 부재, 시스템 할당 실패 분류/직접 API 재시도 원자성이다. [알려진 한계](known-limitations.md)에 계약과 영향을 기록했다. 할당 실패 주입은 자동 승인 검토 사용량 한도로 미실행이며 해당 경로를 런타임 검증한 것으로 보고하지 않는다. 두 중요 수정은 별도 재리뷰 없이 회귀와 최종 세 구성 전체 검사로 검증한다.
+
+최종 세 구성은 각각184/184로 같은 검사를 실행했다. 기존146개와 새 로더8/엔진16/관련 범위4/CLI10개이며 GoogleTest169개+기존 프로세스/fixture15개다. 소스/로그/예시·임시 룰·PCAP 해시, JUnit, 명령과 직접 실행 출력은 [A4 실행 증거](a4-validation-2026-11-07.json)에 저장했다. A3 소스35개 중29개는 그대로이고6개만 계획된 연결 변경이다.
+
+### A4 변경 파일
+
+- 신규 생산 코드: rule.hpp, rule_loader.hpp, rule_engine.hpp, detection_decision.hpp, src/rule_loader.cpp, src/rule_engine.cpp, rules/example.json.
+- 기존 연결: tcp_reassembler.hpp/.cpp의 ByteRange, src/cli.cpp, 루트/테스트 CMakeLists, fixture_writer.cpp.
+- 신규 테스트: test_rule_loader.cpp, test_rule_engine.cpp, test_reassembly_ranges.cpp, test_cli_rules.cpp와 fixtures/rule_fixtures.hpp.
+- 문서: AGENTS/PROJECT_SPEC/IMPLEMENTATION_PLAN/README의 사용자 자체 테스트 조건, 설계 결정·한계·테스트·fixture 설명, 승인 설계/실행 계획, A4 실행 증거. 현재 폴더에서 자동 commit/push 없이 보관했다. A5와 B0/AI는 시작하지 않았다.
+
 ## A3 최종 판정 — 2026-11-07
 
 **완료.** 승인된 [설계](superpowers/specs/2026-11-07-a3-design.md)와 [계획](superpowers/plans/2026-11-07-a3.md)에 따라 구현했다. HEL+LO의 실제 HELLO 복원과 역순·중복·gap, 자원 제한 및 정리를 확인했다. 독립 리뷰 중요 문제를 수정한 최종 소스로 세 구성의 전체 검사를 통과해 A3 인수 조건을 충족했다. 경미 항목 2개는 아래에 보류 기록을 남긴다.

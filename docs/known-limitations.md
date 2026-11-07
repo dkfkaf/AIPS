@@ -1,6 +1,20 @@
 # 알려진 한계
 
-## 현재 상태 — A3 완료, 2026-11-07
+## 현재 상태 — A4 완료, 2026-11-07
+
+- 리뷰 중요 문제2건 수정 뒤 Debug·Release/clang-tidy·ASan/UBSan에서 각각184/184와 포맷 검사가 통과했다. [실행 증거](a4-validation-2026-11-07.json)와 [테스트 기록](test-plan.md)에 실제 결과를 기록했다. 경미 리뷰3건은 아래에 보류한다.
+- KMP는 각 룰의 관련 영역을 다시 검색한다. 최대1024룰을 허용하지만 그 규모의 처리량/지연/RSS 또는 AC 대비 성능은 측정하지 않았다.
+- 룰은 printable ASCII의 대소문자 구분 content만 지원한다. 정규식·바이너리 패턴·응용프로토콜 해석·암호화 해제는 하지 않는다. stream+udp/any는 로딩 단계에서 거부한다.
+- stream 검사는 A3의 제한된 first-seen prefix다. midstream/gap/depth/memory 제한은 기존 reassembly 출력에 남는다. no-match Allow와 stream_evaluated가 전체 세션/보안 검사 완료를 뜻하지 않는다.
+- 중복 이벤트 억제는 Flow/방향/SID별 최대 발행 end-offset이다. 뒤의 match를 먼저 발행한 뒤 앞쪽 과거 위치를 다시 관측하면 그 이벤트도 억제한다. terminal Drop/Pass 판단은 유지한다.
+- watermark 예산은 uint64 배열만 계상한다. 파일/룰/문자열 제한이 로더·KMP 자료를 제한하고 Flow 개수가 map 메타데이터를 제한하지만 전체 프로세스 RSS의 정확한 상한은 아니다.
+- 룰 파일/상태/출력 오류는 분석을 실패로 종료한다. 현재는 PCAP 콘솔 시뮬레이션이며 NFQUEUE verdict 의무·live·A5 JSONL은 후속 단계다.
+- 사용자 결정에 따라 IPS A0~A8 완료와 사용자 자체 테스트·AI 착수 지시 전에는 B0/AI 개발을 시작하지 않는다.
+- `stream_evaluated=1`은 관련 stream window가 있다는 의미다. 포트 조건 불일치나 앞 packet terminal로 실제 stream 검색이 생략돼도1일 수 있으므로 실제 검사한 룰 수로 해석하면 안 된다.
+- 알 수 없는 필드/중복 키는 거부하지만 오류 메시지에 실제 키 이름이 빠질 수 있다. 룰 인덱스와 일반 원인은 표시한다.
+- 실제 시스템 std::bad_alloc은 일반 capture_error로 보고된다. watermark 갱신 뒤 이벤트 벡터 할당이 실패하면 직접 API 재시도 시 발행되지 않은 이벤트도 억제될 수 있다. CLI는 첫 예외에서 종료하며 그 이후 같은 객체 재시도의 원자성을 보장하지 않는다. 이 경로는 정적 리뷰 근거이고 실패 주입 실험은 자동 승인 검토의 사용량 한도로 미실행이다.
+
+## A3 완료 당시 — 2026-11-07
 
 - A3는 오프라인 TCP prefix 재조립을 구현했고 리뷰 중요 문제 수정 뒤 Debug·Release/clang-tidy·ASan/UBSan에서 각각 146/146과 포맷 검사가 통과했다. [실행 증거](a3-validation-2026-11-07.json)와 [검증 기록](test-plan.md)을 참고한다. 중요한 미해결 리뷰 항목은 없고 경미 항목 2개를 아래에 명시한다.
 - 방향별 첫 64 KiB가 기본 검사 범위다. 긴 스트림 전체를 처리하는 이동 창이 아니며 깊이 밖을 검사했다고 보고하지 않는다. overlap의 first-seen 비교도 보관 범위에 한정한다.

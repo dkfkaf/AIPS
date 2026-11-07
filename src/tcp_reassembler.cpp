@@ -134,7 +134,7 @@ void TcpReassembler::release(Stream& stream) noexcept {
 }
 
 void TcpReassembler::process(Stream& stream, const ParsedPacket& packet, TcpMetadata tcp,
-                             ReassemblyIssues& events) {
+                             ReassemblyIssues& events, std::optional<ByteRange>& accepted) {
     const bool syn = (tcp.flags & 0x02U) != 0;
     const bool fin = (tcp.flags & 0x01U) != 0;
     const std::uint32_t data_sequence = tcp.sequence_number + (syn ? 1U : 0U);
@@ -210,6 +210,12 @@ void TcpReassembler::process(Stream& stream, const ParsedPacket& packet, TcpMeta
                present_at(stream.present.get(), stream.contiguous)) {
             ++stream.contiguous;
         }
+        const auto visible_end =
+            std::min(allowed_end, static_cast<std::int64_t>(stream.contiguous));
+        if (visible_end > start) {
+            accepted =
+                ByteRange{static_cast<std::size_t>(start), static_cast<std::size_t>(visible_end)};
+        }
     }
     if (fin) {
         stream.fin_offset = end;
@@ -247,6 +253,7 @@ ReassemblyUpdate TcpReassembler::observe(const FlowObservation& flow, const Pars
     const auto old_contiguous = stream.contiguous;
     const bool old_gap = gap_pending(stream);
     ReassemblyIssues events;
+    std::optional<ByteRange> accepted;
     const auto flags = tcp.flags;
     if ((flags & 0x02U) != 0 && (flags & 0x05U) != 0) {
         note(stream, ReassemblyIssue::InvalidSegment, events);
@@ -262,7 +269,7 @@ ReassemblyUpdate TcpReassembler::observe(const FlowObservation& flow, const Pars
         }
         events.set(static_cast<std::size_t>(ReassemblyIssue::Reset));
     } else {
-        process(stream, packet, tcp, events);
+        process(stream, packet, tcp, events, accepted);
     }
     auto result = snapshot(id, flow.direction, stream);
     if (!entry.reset && stream.contiguous > old_contiguous) {
@@ -275,6 +282,7 @@ ReassemblyUpdate TcpReassembler::observe(const FlowObservation& flow, const Pars
                                                     : ReassemblyIssue::GapFilled));
     }
     result.events = events;
+    result.payload_range = accepted;
     return result;
 }
 

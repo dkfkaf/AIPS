@@ -48,7 +48,10 @@ add_library(miniips_reassembly STATIC src/tcp_reassembler.cpp)
 target_link_libraries(miniips_reassembly PUBLIC miniips_flow)
 
 add_library(miniips_cli STATIC src/cli.cpp)
-target_link_libraries(miniips_cli PRIVATE miniips_packet miniips_flow miniips_reassembly)
+
+add_library(miniips_rules STATIC src/rule_loader.cpp src/rule_engine.cpp)
+target_link_libraries(miniips_rules PUBLIC miniips_reassembly nlohmann_json::nlohmann_json)
+target_link_libraries(miniips_cli PRIVATE miniips_packet miniips_flow miniips_reassembly miniips_rules)
 target_include_directories(miniips_cli PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_compile_definitions(miniips_cli PRIVATE MINIIPS_VERSION="${PROJECT_VERSION}")
 
@@ -78,6 +81,12 @@ if(MINIIPS_CLANG_FORMAT)
             include/miniips/tcp_reassembler.hpp src/tcp_reassembler.cpp
             tests/test_tcp_reassembler.cpp tests/test_reassembly_lifecycle.cpp
             tests/test_cli_reassembly.cpp tests/fixtures/reassembly_fixtures.hpp
+            include/miniips/rule.hpp include/miniips/rule_loader.hpp src/rule_loader.cpp
+            tests/test_rule_loader.cpp
+            include/miniips/detection_decision.hpp include/miniips/rule_engine.hpp
+            src/rule_engine.cpp tests/test_rule_engine.cpp tests/test_reassembly_ranges.cpp
+            tests/fixtures/rule_fixtures.hpp
+            tests/test_cli_rules.cpp
             tests/test_cli_flow.cpp tests/fixtures/flow_fixtures.hpp
             src/cli.cpp src/main.cpp src/packet_parser.cpp src/pcap_source.cpp
             tests/test_cli.cpp tests/test_packet_parser.cpp tests/test_pcap_source.cpp

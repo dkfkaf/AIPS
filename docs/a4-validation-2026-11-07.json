@@ -1,0 +1,645 @@
+{
+  "date": "2026-11-07",
+  "timezone": "Asia/Seoul",
+  "stage": "A4",
+  "result": "complete_with_documented_minors",
+  "approved_design": "docs/superpowers/specs/2026-11-07-a4-design.md",
+  "plan": "docs/superpowers/plans/2026-11-07-a4.md",
+  "workspace": "C:/Users/purt1/OneDrive/Desktop/AIPS",
+  "baseline": {
+    "head": "620042556e58eebc4dcfee1208028c2466d2d6c0",
+    "previous_stage": "A3",
+    "tests": 146,
+    "source_files_checked": 35,
+    "unchanged": 29,
+    "planned_connection_changes": 6,
+    "unexpected_changes": 0,
+    "audit": "build-a4-work/prior-source-audit.json",
+    "automatic_commit_push": false
+  },
+  "user_checkpoint": {
+    "decision": "Finish IPS A0-A8, user self-tests, then explicit user direction before B0/AI development",
+    "ips_all_stages_complete": false,
+    "user_test_completion_report_received": false,
+    "ai_started": false,
+    "records": [
+      "AGENTS.md",
+      "PROJECT_SPEC.md",
+      "IMPLEMENTATION_PLAN.md",
+      "README.md",
+      "docs/design-decisions.md"
+    ],
+    "document_hashes": [
+      {
+        "path": "AGENTS.md",
+        "sha256": "7e4a13b55e78b2cfca9872bc8f4cac04d475dd84d3746fccc4dd81d21c00d5c2"
+      },
+      {
+        "path": "PROJECT_SPEC.md",
+        "sha256": "7874dc1ef664492c2de169efe7d8b2c769dad0e66ed24e3ba375cc01286ae6bf"
+      },
+      {
+        "path": "IMPLEMENTATION_PLAN.md",
+        "sha256": "0d22163ea56fc8f7d63cc8c99dfcf8ce0758f73b58ed19822bd9187d34a03174"
+      },
+      {
+        "path": "README.md",
+        "sha256": "8f2df0c5e43345f1562387af4c29475641d0c7faf8c479b52cd01e92bc347949"
+      },
+      {
+        "path": "docs/design-decisions.md",
+        "sha256": "e273c86103db31c2bbe93aab9380290ba43710fee88bc459aeaef54b88bba1df"
+      }
+    ],
+    "pattern_engine_choice": "Original proposed A4 KMP design approved; no AC introduced"
+  },
+  "environment": {
+    "platform": "WSL2 Ubuntu24.04 x86_64",
+    "compiler": "GCC13.3",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "clang_tools": "18.1.3",
+    "full_tests_user": "root",
+    "unprivileged_check": "nobody uid65534, synthetic packet PCAP only",
+    "log": "build-a4-work/environment.log"
+  },
+  "contracts": {
+    "file_bytes": 1048576,
+    "rules": 1024,
+    "json_depth": 8,
+    "content_bytes": "1..4096 printable ASCII",
+    "message_bytes": "1..1024 UTF-8; ASCII JSON + DEL escape in console",
+    "sid": "1..uint32_max",
+    "priority": "int32",
+    "ports": "0..65535",
+    "stream_protocol": "tcp only",
+    "state_bytes": 33554432,
+    "max_flows": 10000,
+    "policy": "priority then sid; alert continues, first matching pass/drop terminates, default Allow",
+    "matcher": "per-rule KMP, greatest intersecting end offset, at most one event per rule/observation",
+    "related_ranges": "newly contiguous suffix plus accepted current payload intersection with first-seen prefix",
+    "dedup": "flow/direction/SID maximum emitted end; verdict preserved when event suppressed",
+    "cleanup": "flow expiry and EOF; bounded metadata and exact owned watermark array budget, not RSS",
+    "pcap_enforced": false,
+    "jsonl_implemented": false,
+    "real_drop_implemented": false
+  },
+  "tdd": {
+    "loader": "missing header compile RED, no runtime claim",
+    "engine": "missing header compile RED, no runtime claim",
+    "cli": "8 actual failures, 1 existing invalid-option test passed before implementation",
+    "review_fixes": "2 failing regressions -> GREEN: impossible ACK/payload contexts and DEL/C1/Unicode separators",
+    "initial_tidy": "optional aggregate end proof warning; zero no-match sentinel/value_or refactor, no checker suppression/assertion changes"
+  },
+  "test_breakdown": {
+    "baseline": 146,
+    "added": {
+      "rule_loader": 8,
+      "rule_engine": 16,
+      "reassembly_ranges": 4,
+      "cli_rules": 10
+    },
+    "total": 184
+  },
+  "final_tests": [
+    {
+      "profile": "debug",
+      "tests": 184,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a4-work/debug-tests.xml",
+      "log": "build-a4-work/debug-tests.log"
+    },
+    {
+      "profile": "release",
+      "tests": 184,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a4-work/release-tests.xml",
+      "log": "build-a4-work/release-tests.log"
+    },
+    {
+      "profile": "sanitize",
+      "tests": 184,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a4-work/sanitize-tests.xml",
+      "log": "build-a4-work/sanitize-tests.log"
+    }
+  ],
+  "commands": {
+    "invocation": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc <script>",
+    "debug": "cmake --build build --parallel 2; ctest --test-dir build --output-on-failure --no-tests=error --output-junit <absolute workdir>/debug-tests.xml",
+    "release": "cmake --build build-release --parallel 2; ctest --test-dir build-release --output-on-failure --no-tests=error --output-junit <absolute workdir>/release-tests.xml; cache MINIIPS_ENABLE_CLANG_TIDY=ON",
+    "sanitize": "cmake --build build-sanitize --parallel 2; ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure --no-tests=error --output-junit <absolute workdir>/sanitize-tests.xml",
+    "format": "cmake --build build --target format-check",
+    "fixture_writer": "./build/tests/miniips_fixture_writer ./build-a4-work/fixtures",
+    "alert": "./build/miniips --mode pcap --input build-a4-work/fixtures/reassembly_hello.pcap --rules rules/example.json",
+    "packet_drop": "./build/miniips --mode pcap --input build-a4-work/fixtures/rules_packet.pcap --rules rules/example.json",
+    "pass": "./build/miniips --mode pcap --input build-a4-work/fixtures/rules_packet.pcap --rules build-a4-work/pass.json",
+    "retransmit": "./build/miniips --mode pcap --input build-a4-work/fixtures/rules_retransmit.pcap --rules build-a4-work/stream-drop.json",
+    "nobody": "runuser -u nobody -- ./build/miniips --mode pcap --input build-a4-work/fixtures/rules_packet.pcap --rules rules/example.json",
+    "unicode": "./build/miniips --mode pcap --input build-a4-work/fixtures/reassembly_hello.pcap --rules build-a4-work/unicode.json; verified printable ASCII+LF bytes only",
+    "invalid": "./build/miniips --mode pcap --input missing.pcap --rules build-a4-work/invalid.json (expected1 before PCAP open)",
+    "budget": "retransmit command + --rule-state-bytes 7 (expected1)"
+  },
+  "independent_review": {
+    "model": "gpt-6-astra",
+    "reasoning": "high",
+    "fresh_context": true,
+    "read_only": true,
+    "report": "build-a4-work/review.md",
+    "critical": 0,
+    "important_found": 2,
+    "important_fixed": 2,
+    "important_remaining": 0,
+    "minors_deferred": 3,
+    "declined_to_judge": [],
+    "unexecuted_probe": "std::bad_alloc injection not run: automatic approval review usage limit; static evidence only",
+    "note": "One final review; Important fixes verified with RED/GREEN and full suites, no re-review."
+  },
+  "limitations": [
+    "KMP cost scales with applicable rules; no AC/performance/RSS benchmark",
+    "bounded A3 first-seen prefix, not complete TCP/session/security inspection",
+    "maximum emitted-end dedup can suppress earlier unreported occurrences, not verdicts",
+    "existing A3 minor limitations remain",
+    "no A5 JSONL/live/Inline/AI; PCAP drop is simulation",
+    "remote CI and full unprivileged suite not run"
+  ],
+  "source_hashes": [
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "7fb777e915e83484b2576a4f145d1863af504c4aceb378cf4eec0cb8b376bfaa"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "adbecc781388f91238e662ad700d5cc39be67ec6cf88cc7215fb16c99d5dafff"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "e74561d8d9623bbcbda945535412b785df18557de47d5c448ab05b2e5af0bf29"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "164ab79ec450561b330a77509fc404afbb760fe6aec55a97f7100cf18c44e12b"
+    },
+    {
+      "path": "include/miniips/detection_decision.hpp",
+      "sha256": "6595dfac10fd1632d1dc02c2c0940e2607b9222dd7a0bb805e0958cdcc23c116"
+    },
+    {
+      "path": "include/miniips/flow_table.hpp",
+      "sha256": "c18aca9c535208113d4430bb481514bb2c11fd4b397863531fa067118d283981"
+    },
+    {
+      "path": "include/miniips/flow.hpp",
+      "sha256": "32cba00047ae0084ddc5d0e039539715cdb247020f1e269c6baf40a5460e6eee"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "e980c631c3cd7eb742f1d66505602025aa76fd9c69c7825dc8d4088a1724584f"
+    },
+    {
+      "path": "include/miniips/rule_engine.hpp",
+      "sha256": "e3f861dd1e1c2a782f566f1534501b0dd74a1f4942a53ed8e69a031291663070"
+    },
+    {
+      "path": "include/miniips/rule_loader.hpp",
+      "sha256": "ed7a1e30b5efd221554d87bccf4034ee8e5ba10895a150b2add8973b750b76b9"
+    },
+    {
+      "path": "include/miniips/rule.hpp",
+      "sha256": "a41757ebed161ee5226df6c7d9915b0227649cf12615f43bddb0554d794db44f"
+    },
+    {
+      "path": "include/miniips/tcp_reassembler.hpp",
+      "sha256": "c8abdeb6cfdd3f782c07c80ed59ffb6399348f862330cc59944d9a6863ddafe6"
+    },
+    {
+      "path": "rules/example.json",
+      "sha256": "6dfefc84cbf8bb0acb69ea7feb8f17a749e8435d3c81798ab741b5887a32b5ba"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "d14513d698efc039576fb07c073046b9e5bd13f38a4be7974463045e1dcdf30f"
+    },
+    {
+      "path": "src/flow_table.cpp",
+      "sha256": "25b4518b3999cec85a7825c8f9597941215b6525c0b7d21e3438213388cbcdeb"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "878712b1d6863b404b633c7787036f8733e98076596b85553f507560a7ea0239"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "87ac88a3c419f4b6518cd6883e85eb5d6f610fe62c65ed4534668077a918ee5a"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "ae1b3f20584bc029f4da0332fc0d04b368d31a770b72c6bb91d56d281f8cdbc5"
+    },
+    {
+      "path": "src/rule_engine.cpp",
+      "sha256": "6cc4b41fab6dce89cbfd30002b2f54f64f289d732d4627b65f277a2cd6ae4865"
+    },
+    {
+      "path": "src/rule_loader.cpp",
+      "sha256": "e4c63f1ced30bcf2ce3649cd83a7119dabc0828ae2bb57c9f4d285f33f024d34"
+    },
+    {
+      "path": "src/tcp_reassembler.cpp",
+      "sha256": "5e55c31b559116982d7d129ce4b852e4036898e0d82be459a96ea8bead85e72b"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "c8454b1bd75a7abdf2d84916b5f0499415638c02d96daae361a1d3638a169dec"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "tests/check_flow_cli.cmake",
+      "sha256": "2e1da62f99f74c18cbd6247075cce0901a16dd64869d762f10bb8ac244a1cfb7"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "38aa7a9fc6957e040abef8bb49e459b0bec3c711adbc1bb2af8ccf3b6d9f8317"
+    },
+    {
+      "path": "tests/fixtures/flow_fixtures.hpp",
+      "sha256": "4c34476496a43be5a45f29c6fdd8bdf0651f055e8cfbd49d066711f33d7fdf73"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    },
+    {
+      "path": "tests/fixtures/reassembly_fixtures.hpp",
+      "sha256": "fd3899ffef525011b2318bec5b4267a7dba3d89428822e9c5eb27745420b0705"
+    },
+    {
+      "path": "tests/fixtures/rule_fixtures.hpp",
+      "sha256": "e7552a454ac5ea5cf58cdebbca1d45093847a3e348bc76cc03114f0e67974336"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/test_cli_flow.cpp",
+      "sha256": "96fb66270438af796b1db32c64e3f9f9f03dd58e7910eefda8fbd6ac58370386"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli_reassembly.cpp",
+      "sha256": "19dd1e6eba36c08abefec685fcfdd3239f6d6e630ca3b3e8a723ecb4458dde38"
+    },
+    {
+      "path": "tests/test_cli_rules.cpp",
+      "sha256": "f0a5e3bcfa031e7a7ffb084092a0ca635bbe0d61abed2bc253a68e5a08b8f4a8"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/test_flow_table.cpp",
+      "sha256": "3f30fea713c3328be6d8206b1c047e304ef0a03aacaaaaaa0376c8ad69b4bb00"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_reassembly_lifecycle.cpp",
+      "sha256": "26930f1b51d9a54e43741908cd68bffa4b77d976053155be6eb4b2f92c61032e"
+    },
+    {
+      "path": "tests/test_reassembly_ranges.cpp",
+      "sha256": "30a707bb09b2caed4d9a9b0541c218b4b6cd862f08881ec1920f3f8b93953b9a"
+    },
+    {
+      "path": "tests/test_rule_engine.cpp",
+      "sha256": "1f2c786d1310945dc13dba0aa10aa100ca35434f1a02af7d0841fda51ae5291e"
+    },
+    {
+      "path": "tests/test_rule_loader.cpp",
+      "sha256": "b5e24f69adb85c07620b7b1f0288315105a97478f8e0aa1143b4916f5d162008"
+    },
+    {
+      "path": "tests/test_tcp_reassembler.cpp",
+      "sha256": "660e61176938e1bc6b45e65b5fdaf1380d49e6257b9170b9a1be447dbfc98e02"
+    }
+  ],
+  "log_files": [
+    {
+      "path": "build-a4-work/debug-build.log",
+      "sha256": "7b8794badf3a385d44fc3299b8afffa1f7a30f4bdf29cf6069d0bc55387c21f9"
+    },
+    {
+      "path": "build-a4-work/debug-tests.log",
+      "sha256": "ede031ce700152b93d39e2748a1c54688a8f6204409672e87345c2052e3676a1"
+    },
+    {
+      "path": "build-a4-work/environment.log",
+      "sha256": "a55e8ca7dd4d180c5b10f40b4a86de3d97b94515de299f764b2c5674c8a8ff78"
+    },
+    {
+      "path": "build-a4-work/final-review-green.log",
+      "sha256": "45f1ef35a02040e9f8004f70ae35f3f617a2d05df85a916c4f96bb4d0ef2b125"
+    },
+    {
+      "path": "build-a4-work/final-review-red-build.log",
+      "sha256": "a93559d7f714681b54c4381b2581353f87d85a7789e42587d8d9497f1d582024"
+    },
+    {
+      "path": "build-a4-work/final-review-red.log",
+      "sha256": "ec1da463437f3f1185fccc6041c488b0ff7c3ef3703083c7ecc0a0204e948df3"
+    },
+    {
+      "path": "build-a4-work/format.log",
+      "sha256": "2a2dfb33385f763495a7752721d7f4bcf54c5fe8cfbf144c88c3f1601c5a6653"
+    },
+    {
+      "path": "build-a4-work/help.log",
+      "sha256": "01b4025d7e1fc5369daa957bab447d03c1b21323a9c7ba23528f57f160b11c12"
+    },
+    {
+      "path": "build-a4-work/manual-alert.log",
+      "sha256": "7d46bf9f13e2c0ec8ccffe8661a932b3a6c68901574e4fb55d0ce55caec9ab26"
+    },
+    {
+      "path": "build-a4-work/manual-budget-error.log",
+      "sha256": "536ec896a4e9cb2568b4feb0d8622d1656d86cb86081554c3ada47f63fed2f43"
+    },
+    {
+      "path": "build-a4-work/manual-budget.log",
+      "sha256": "838d9285e82a8ac8257cfb8c50e4c8452d69c5a6de0056e2d5eadbb712e16626"
+    },
+    {
+      "path": "build-a4-work/manual-invalid-error.log",
+      "sha256": "282b7c228906c5452b48352e114a3857443ab18f92c660946b5ec07756c41545"
+    },
+    {
+      "path": "build-a4-work/manual-invalid.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-a4-work/manual-nobody.log",
+      "sha256": "65f95dfef293bfc6a80cf80c7217eaf715df8bde0f0527cdccea409c853bab8c"
+    },
+    {
+      "path": "build-a4-work/manual-packet-drop.log",
+      "sha256": "65f95dfef293bfc6a80cf80c7217eaf715df8bde0f0527cdccea409c853bab8c"
+    },
+    {
+      "path": "build-a4-work/manual-pass.log",
+      "sha256": "f07e85eaa5eb3365b09a9c70c44589dea515764c34ec77c703407a1b3529e637"
+    },
+    {
+      "path": "build-a4-work/manual-retransmit.log",
+      "sha256": "4980c8cfa7ba2bbc14e735bc180fd8b7eb54dd89489fcbb2d5f4757797a81744"
+    },
+    {
+      "path": "build-a4-work/manual-unicode.log",
+      "sha256": "b9d22530709732114be4d6378511d73e76b55e265d7f80219b19522890fce6a9"
+    },
+    {
+      "path": "build-a4-work/release-build-initial.log",
+      "sha256": "436e00792b0966f63d5658e9b34de2e68ae2bce3547debb9a416b05b55a8ca99"
+    },
+    {
+      "path": "build-a4-work/release-build-loop-copy.log",
+      "sha256": "02ca88afb8d00ad4a7128e65c8f52d64e7b31fffe4b3c28eb3348594f8227a4e"
+    },
+    {
+      "path": "build-a4-work/release-build-test-optionals.log",
+      "sha256": "53396f3b52d2f000b03a55dfbd8274d67af73cbab50e781118e492c295ee8fcf"
+    },
+    {
+      "path": "build-a4-work/release-build.log",
+      "sha256": "58c001616cfd0a89d5b2d90ad3e244e29bfcae443e04b1001b2dedf11ef532b7"
+    },
+    {
+      "path": "build-a4-work/release-tests.log",
+      "sha256": "6e6b5b11fec42e889648b08b13a6b3445ba0d9a688aa34117676a78ef704d290"
+    },
+    {
+      "path": "build-a4-work/sanitize-build.log",
+      "sha256": "b6044bd8d888e42ba1751448cb0e6edb2a4728644df763360b0d4bda0dd003d4"
+    },
+    {
+      "path": "build-a4-work/sanitize-tests.log",
+      "sha256": "c850d0bef89bd85d15298b94cec46836e6716f7d6a41fcfb08208ffbf7eaf86b"
+    },
+    {
+      "path": "build-a4-work/task1-build.log",
+      "sha256": "5dcac8e5fdf46c6782bdaa32f7ed7a21a0331ed93be2a110df4cce3a2aabde5f"
+    },
+    {
+      "path": "build-a4-work/task1-red.log",
+      "sha256": "0063a2902942f1fdcc477be5842ddc09589c77bfa43c5d93ec44a7148add30f8"
+    },
+    {
+      "path": "build-a4-work/task1-tests.log",
+      "sha256": "93e9fc0c2505b46784664414c1742023598a54beba71ac520e397ca10d25d0a4"
+    },
+    {
+      "path": "build-a4-work/task2-build.log",
+      "sha256": "da41e4328dcff17e02b90c0add4e6423ee3bfff3507acfc219ca1a6b98d444a0"
+    },
+    {
+      "path": "build-a4-work/task2-red.log",
+      "sha256": "6c70d3f5efe7b6f9f82cb4cc15426f20396456ccdb2d23941417b58687743c88"
+    },
+    {
+      "path": "build-a4-work/task2-tests.log",
+      "sha256": "aa46421fc59e57356e98707efd1c53f926b04193a026ece42baa9aaaa74bb0ca"
+    },
+    {
+      "path": "build-a4-work/task3-build.log",
+      "sha256": "754a90ee374ea12eaf2f36de1dcd245997aeeeba9fb9d26b3affd415c6da75e3"
+    },
+    {
+      "path": "build-a4-work/task3-red-build.log",
+      "sha256": "78147aeb10be60a1568448899c0bd6415357b7827a004dc0e4556cbde5f2b2ce"
+    },
+    {
+      "path": "build-a4-work/task3-red.log",
+      "sha256": "2801b62f311c6dfe41eb3d31f1faee6cc3a8d61acb674312c73c86594a4e8037"
+    },
+    {
+      "path": "build-a4-work/version.log",
+      "sha256": "ce7186c87b331620ebe135eef5c7441d606eeb16afd7efdbeaa75dfc8e7f1db0"
+    },
+    {
+      "path": "build-a4-work/debug-tests.xml",
+      "sha256": "e1da144284e98534302fad3757835709716e8cb8d4453b15a528fa9ff60fac1e"
+    },
+    {
+      "path": "build-a4-work/release-tests.xml",
+      "sha256": "507b19c3402bb1d550dd86e4e29e1ae2f0f9f41a6be7d6fc91969f9ef0b74dbf"
+    },
+    {
+      "path": "build-a4-work/sanitize-tests.xml",
+      "sha256": "7c1f6063031cde6d68648e5f9efd85d7e2f37de863680edc52bd6c90a3be6f09"
+    },
+    {
+      "path": "build-a4-work/review.md",
+      "sha256": "4c5ba644dd5201f1723624f713e8954752cc5747e70ce0e9fd8f60d2734194ae"
+    },
+    {
+      "path": "build-a4-work/review-source-hashes.json",
+      "sha256": "be9907da707099ffd36927fc813a4005774827969dd0185dc9c0effd12796459"
+    },
+    {
+      "path": "build-a4-work/prior-source-audit.json",
+      "sha256": "eabd8d36a23b059cd6416fc2179c2a7d5d5223cffaf570adcf13bb6d0969f6de"
+    }
+  ],
+  "direct_cli_results": [
+    {
+      "case": "alert",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-alert.log",
+      "summary": [
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=5 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=4 events=1 suppressed=0 simulated_drops=0 active=0 state_bytes=0 peak_state_bytes=8 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "packet-drop",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-packet-drop.log",
+      "summary": [
+        "pcap_summary packets=1 parsed=1 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=7 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=1 events=1 suppressed=0 simulated_drops=1 active=0 state_bytes=0 peak_state_bytes=0 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "pass",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-pass.log",
+      "summary": [
+        "pcap_summary packets=1 parsed=1 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=7 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=1 events=1 suppressed=0 simulated_drops=0 active=0 state_bytes=0 peak_state_bytes=0 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "retransmit",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-retransmit.log",
+      "summary": [
+        "pcap_summary packets=5 parsed=5 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=5 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=5 events=1 suppressed=1 simulated_drops=2 active=0 state_bytes=0 peak_state_bytes=8 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "nobody",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-nobody.log",
+      "summary": [
+        "pcap_summary packets=1 parsed=1 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=7 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=1 events=1 suppressed=0 simulated_drops=1 active=0 state_bytes=0 peak_state_bytes=0 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "unicode",
+      "exit_code": 0,
+      "log": "build-a4-work/manual-unicode.log",
+      "summary": [
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=5 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728",
+        "detection_summary packets=4 events=1 suppressed=0 simulated_drops=0 active=0 state_bytes=0 peak_state_bytes=8 mode=pcap enforced=false"
+      ]
+    },
+    {
+      "case": "invalid",
+      "exit_code": 1,
+      "log": "build-a4-work/manual-invalid.log",
+      "summary": []
+    },
+    {
+      "case": "budget",
+      "exit_code": 1,
+      "log": "build-a4-work/manual-budget.log",
+      "summary": [
+        "packet=1 timestamp_us=1000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=40 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=0 tcp_seq=99 tcp_ack=0 tcp_flags=2 flow_id=1 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=40 bwd_bytes=0 stream_bytes=0 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=0 issues=none",
+        "decision packet=1 action=allow terminal_sid=none emitted=0 suppressed=0 stream_evaluated=0 mode=pcap enforced=false",
+        "packet=2 timestamp_us=2000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=43 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=3 tcp_seq=100 tcp_ack=0 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=2 bwd_packets=0 fwd_bytes=83 bwd_bytes=0 stream_bytes=3 stream_new_bytes=3 stream_pending_bytes=0 stream_closed=0 issues=none",
+        "decision packet=2 action=allow terminal_sid=none emitted=0 suppressed=0 stream_evaluated=1 mode=pcap enforced=false"
+      ]
+    }
+  ],
+  "auxiliary_rules": [
+    {
+      "path": "build-a4-work/pass.json",
+      "sha256": "b864b4c6d4e7df1c0758c56eda2a85f77ac396992157fd3426bd1c614236e740"
+    },
+    {
+      "path": "build-a4-work/stream-drop.json",
+      "sha256": "2ae6bffc77d56404171cc86705858cc363bc09047b2cb58681b268e87c788648"
+    },
+    {
+      "path": "build-a4-work/unicode.json",
+      "sha256": "74bc78f33c9398c9614d2238ef5777454a30b84deaa44363da10a8c61c418018"
+    },
+    {
+      "path": "build-a4-work/invalid.json",
+      "sha256": "83eae7e6a4d3c71bcc96328c519fba2941ee486968a6d6322fb08ceb44e3efd6"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "build-a4-work/fixtures/reassembly_hello.pcap",
+      "sha256": "e1a951a2434ac1e09e8535ca8aa5223424e0a00f116876bb9b208d3ee70452e1"
+    },
+    {
+      "path": "build-a4-work/fixtures/rules_packet.pcap",
+      "sha256": "0c9cf5d1fbd3a2f177f8e2db6b05e889af59402c99654e354be9e0e13cc98387"
+    },
+    {
+      "path": "build-a4-work/fixtures/rules_retransmit.pcap",
+      "sha256": "51f1602411e06c5e9d522245c08cec33a9887b14986605458b9f1553f89f7cde"
+    }
+  ]
+}

@@ -1,15 +1,19 @@
 # IMPLEMENTATION_PLAN.md — MiniSuricata-AI 단계별 개발·검증·프롬프트
 
-> **버전:** 2.4 · 2026-10-30 · Precision AI 참고형 평가·선별·후속 연구 계획 반영  
+> **버전:** 2.5 · 2026-11-07 · IPS 완성·사용자 자체 테스트·AI 착수 지시 순서 기록
 > **AI의 항시 준수 규칙:** [`AGENTS.md`](AGENTS.md)  
 > **기능·설계·데이터·IPC 계약:** [`PROJECT_SPEC.md`](PROJECT_SPEC.md)  
 > **코딩 컨벤션·안전 코딩:** [`CODING_STYLE.md`](CODING_STYLE.md)
 
 ## 프로젝트 개발 순서
 
+**사용자 결정 — 2026-11-07:** IPS를 A0~A8까지 먼저 완성하고 사용자가 자체 테스트를 돌린 뒤 AI 모델 개발로 넘어간다. A8의 개발자 검증 통과만으로 B0를 시작하지 않는다. 사용자 테스트 결과 확인과 AI 착수 지시 후 B0부터 순서대로 진행한다. 현재 허가된 구현 범위는 A4다.
+
 ```text
 A. C++20 IDS/IPS 엔진: A0 → A1 → A2 → A3 → A4 → A5 → A6 → A7 → A8
                                       (6가지 핵심 기능 완성 및 독립 검증)
+                                  ↓
+사용자 자체 IPS 테스트 → 결과 확인 및 AI 단계 착수 지시
                                   ↓
 B. Python/PyTorch AI 모델: B0 → B1 → B2 → B3 → B4 → B5
                                       (데이터 품질, 학습, 독립 추론)

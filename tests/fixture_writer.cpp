@@ -38,6 +38,14 @@ int main(int argc, char* argv[]) {
                    {record_at(tcp_packet(), 1), record_at(udp_packet(), 2),
                     record_at(reverse_tcp_packet(), 3)});
         using miniips::test::tcp_segment;
+        write_pcap(directory / "rules_packet.pcap",
+                   {record_at(tcp_segment({.sequence = 100, .payload = "BLOCKME"}), 1)});
+        write_pcap(directory / "rules_retransmit.pcap",
+                   {record_at(tcp_segment({.sequence = 99, .flags = 0x02}), 1),
+                    record_at(tcp_segment({.sequence = 100, .payload = "HEL"}), 2),
+                    record_at(tcp_segment({.sequence = 103, .payload = "LO"}), 3),
+                    record_at(tcp_segment({.sequence = 100, .payload = "HEL"}), 4),
+                    record_at(tcp_segment({.sequence = 105, .flags = 0x10}), 5)});
         write_pcap(directory / "reassembly_hello.pcap",
                    {record_at(tcp_segment({.sequence = 99, .flags = 0x02}), 1),
                     record_at(tcp_segment({.sequence = 103, .payload = "LO"}), 2),

@@ -5,7 +5,7 @@ add_executable(miniips_parser_tests test_packet_parser.cpp)
 target_link_libraries(miniips_parser_tests PRIVATE miniips_packet GTest::gtest_main)
 
 add_executable(miniips_capture_tests test_pcap_source.cpp test_cli_pcap.cpp test_cli_flow.cpp
-    test_cli_reassembly.cpp)
+    test_cli_reassembly.cpp test_cli_rules.cpp)
 target_link_libraries(miniips_capture_tests PRIVATE miniips_cli GTest::gtest_main)
 
 add_executable(miniips_flow_tests test_flow_table.cpp)
@@ -15,6 +15,9 @@ add_executable(miniips_reassembly_tests test_tcp_reassembler.cpp test_reassembly
 target_link_libraries(miniips_reassembly_tests PRIVATE miniips_reassembly GTest::gtest_main)
 
 include(GoogleTest)
+add_executable(miniips_rule_tests test_rule_loader.cpp test_rule_engine.cpp test_reassembly_ranges.cpp)
+target_link_libraries(miniips_rule_tests PRIVATE miniips_rules GTest::gtest_main)
+gtest_discover_tests(miniips_rule_tests PROPERTIES TIMEOUT 10)
 gtest_discover_tests(miniips_cli_tests PROPERTIES TIMEOUT 10)
 gtest_discover_tests(miniips_parser_tests PROPERTIES TIMEOUT 10)
 gtest_discover_tests(miniips_capture_tests PROPERTIES TIMEOUT 10)

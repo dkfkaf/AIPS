@@ -1,5 +1,9 @@
 # 고정 입력과 합성 PCAP
 
+## A4 룰 입력 — 2026-11-07
+
+기존 fixture writer에 rules_packet.pcap(BLOCKME packet drop 시뮬레이션)과 rules_retransmit.pcap(SYN → HEL → LO → HEL 재전송 → 순수 ACK)을 추가했다. 두 번째는 stream HELLO drop 룰 사용 시 events1/suppressed1/simulated_drops2이고 ACK는 Allow다. 원본 payload는 콘솔에 출력하지 않는다. 예시 JSON은 rules/example.json이며 HELLO stream alert와 BLOCKME packet drop 두 개다. 실제 네트워크 차단을 테스트한 것은 아니다.
+
 ## A3 재조립 입력 — 2026-11-07
 
 `reassembly_fixtures.hpp`는 고정 Ethernet/IPv4/TCP 헤더에서 시퀀스·flags·payload·방향을 바꾸고 IP/TCP 체크섬을 다시 계산한다. 체크섬을 생산 파서가 검증한다는 뜻은 아니다. 외부 트래픽이나 데이터셋은 쓰지 않는다.

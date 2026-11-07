@@ -2,13 +2,34 @@
 
 C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드는 교육·연구용 프로젝트다. Suricata에서 영감을 얻은 독립 구현이다.
 
-**현재 상태(2026-11-07): A0~A3 검증 완료.** 오프라인 PCAP·Flow 추적에 방향별 TCP prefix 재조립을 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일한 146개가 각각 모두 통과했고 포맷 검사도 통과했다. 독립 리뷰의 중요 문제 2건은 회귀 테스트로 수정·검증했으며 경미 항목 2건은 [알려진 한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A3 실행 증거](docs/a3-validation-2026-11-07.json)를 참고한다.
+**현재 상태(2026-11-07): A0~A4 검증 완료.** JSON 룰 로딩과 KMP packet/stream 판정을 PCAP에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일한 184개가 각각 모두 통과했고 포맷 검사도 통과했다. A4 독립 리뷰 중요2건은 회귀 테스트로 수정했고 경미3건은 [알려진 한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A4 실행 증거](docs/a4-validation-2026-11-07.json)를 참고한다. IPS 전체 완성과 사용자 자체 테스트는 앞으로의 단계다.
 
 앞서 발생했던 WSL 설치 오류와 도구 부재는 [환경 복구 전 기록](docs/a0-validation-2026-11-05.json)에, 복구 후 실제 명령과 결과는 [Linux 실행 기록](docs/a0-validation-2026-11-05-linux.json)에 보관한다.
 
 작업 규칙은 [AGENTS.md](AGENTS.md), 기능 계약은 [PROJECT_SPEC.md](PROJECT_SPEC.md), 개발 단계는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 코드 규칙은 [CODING_STYLE.md](CODING_STYLE.md)를 따른다.
 
+## A4 JSON 룰 엔진 — 2026-11-07
+
+JSON 룰 로더와 KMP 기반 packet/stream 룰 엔진을 구현했다. 중요 리뷰 수정 뒤 Debug·Release/clang-tidy·ASan/UBSan에서 각각184/184와 포맷 검사를 통과했다. A4는 PCAP 시뮬레이션이고 실제 IPS 전체 완성이 아니다. 경미 보류와 실행 한계는 [테스트 기록](docs/test-plan.md)에 명시한다.
+
+```bash
+./build/tests/miniips_fixture_writer ./build/tests/fixtures
+./build/miniips --mode pcap --input ./build/tests/fixtures/reassembly_hello.pcap --rules rules/example.json
+./build/miniips --mode pcap --input ./build/tests/fixtures/rules_packet.pcap --rules rules/example.json
+```
+
+첫 예시는 HEL+LO의 stream alert로 Allow, 두 번째는 BLOCKME packet drop의 시뮬레이션이다. 모든 룰 판정에 `mode=pcap enforced=false`를 표시한다. 옵션을 생략하면 기존 A3 분석을 유지한다.
+
+- JSON은 전체 검증 후 사용한다. 잘못된 한 룰·중복 SID/키·알 수 없는 필드도 파일 전체 실패다. 파일1 MiB/1024룰/content1~4096 printable ASCII/message1~1024 UTF-8 bytes/depth8 상한을 둔다.
+- sid는 양의 uint32, priority는 int32, 포트는0~65535다. stream은 tcp만 허용한다. 상세 스키마는 [승인 설계](docs/superpowers/specs/2026-11-07-a4-design.md)를 참고한다.
+- priority, 같은 값이면 sid 순서다. alert는 계속 검사하고 pass/drop은 현재 관측의 Allow/Drop을 확정한다. 매치가 없으면 Allow이며 Flow 전체 영구 pass/drop 캐시는 아니다.
+- 현재 payload와 새 연속 구간에 관련된 패턴만 stream 판정한다. 재전송은 이벤트를 억제해도 Drop을 유지하고, payload 없는 ACK에는 과거 패턴을 반복 적용하지 않는다. 물리적으로 앞서 지나간 패킷을 소급 차단하지 않는다.
+- `--rule-state-bytes N`은 stream 룰별 방향 watermark 배열 예산(기본33554432)이다. --rules와 함께 사용한다. 첫 stream 이벤트에서 할당하고 만료/EOF에 해제한다. 부족하면 detection_error와 코드1로 종료한다. 전체 RSS 상한은 아니다.
+- KMP는 룰마다 검색하므로 룰 수에 비례한 비용이 있다. Aho–Corasick과의 성능 비교는 미실행이며 처리량을 보장하지 않는다. message는 ASCII JSON 문자열로 표시해 Unicode 제어/줄 구분자도 escape한다. 콘솔 출력은 A5 JSONL 형식이 아니다.
+
 ## 현재 작성된 기능
+
+**진행 순서(사용자 결정, 2026-11-07): IPS 완성(A0~A8) → 사용자 자체 테스트 → 결과 확인·AI 착수 지시 → AI 모델 개발(B0~B5) → 연동(C단계).** 개발자 검증을 통과해도 사용자 테스트 전에 AI 개발로 자동 전환하지 않는다.
 
 - CMake/Ninja, C++20, Linux 시스템 의존성 탐색, 포맷·정적 분석·sanitizer 옵션과 Ubuntu CI.
 - 기존 `--help`, `--version`과 A1 `--mode pcap --input PATH`.
@@ -17,7 +38,8 @@ C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드�
 - 정규화된 5-tuple의 양방향 Flow ID, 최초 관측 기준 방향, 방향별 IP 바이트·패킷·IAT·TCP flag 집계와 관측 기반 TCP 상태.
 - 최대 10,000개·유휴 120초 기본값, 설정 가능한 개수·시간 제한과 추적 거부 표시.
 - 방향별 TCP 순서 복원·중복 제거·first-seen 겹침 처리·불완전 사유와 버퍼/깊이 제한. EOF·유휴 만료·RST 정리.
-- GoogleTest 131개와 CTest 프로세스 검사·fixture 준비 15개, 총 146개를 Debug·Release·ASan/UBSan에서 각각 실행해 모두 통과했다.
+- JSON 전체 검증·KMP 검색·우선순위 alert/pass/drop·재전송 이벤트 억제와 제한된 상태 정리.
+- GoogleTest 169개와 CTest 프로세스 검사·fixture 준비 15개, 총184개를 Debug·Release·ASan/UBSan에서 각각 실행해 모두 통과했다.
 
 룰 탐지·JSONL 이벤트·라이브 수집·차단·AI·IPC는 후속 단계다.
 
@@ -197,8 +219,11 @@ ctest --test-dir build-sanitize --output-on-failure --no-tests=error
 - [A3 승인 설계](docs/superpowers/specs/2026-11-07-a3-design.md)
 - [A3 실행 계획](docs/superpowers/plans/2026-11-07-a3.md)
 - [A3 실행 증거](docs/a3-validation-2026-11-07.json)
+- [A4 승인 설계](docs/superpowers/specs/2026-11-07-a4-design.md)
+- [A4 실행 계획](docs/superpowers/plans/2026-11-07-a4.md)
+- [A4 실행 증거](docs/a4-validation-2026-11-07.json)
 - [A2 구현 계획](docs/superpowers/plans/2026-11-06-a2.md)
 - [A2 실행 결과](docs/a2-validation-2026-11-06.json)
 - [고정 테스트 바이트 설명](tests/fixtures/README.md)
 
-A0~A3는 인수 검증을 완료했다. 다음 A4 룰 엔진은 별도 사용자 지시 후 진행한다.
+A0~A4는 인수 검증을 완료했다. 다음 A5 JSONL 로그·파이프라인 통합은 별도 사용자 지시 후 진행한다. A8까지 IPS를 먼저 완성하고 사용자 자체 테스트 뒤 AI 착수 지시를 기다린다.

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <exception>
 #include <limits>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
@@ -17,6 +18,8 @@
 #include "miniips/capture_source.hpp"
 #include "miniips/flow_table.hpp"
 #include "miniips/packet_parser.hpp"
+#include "miniips/rule_engine.hpp"
+#include "miniips/rule_loader.hpp"
 #include "miniips/tcp_reassembler.hpp"
 
 namespace miniips {
@@ -35,8 +38,10 @@ constexpr std::string_view HELP_TEXT =
     "  --flow-idle-timeout-seconds N Expire idle flows (default: 120).\n"
     "  --tcp-stream-bytes N Limit each TCP prefix/depth (default: 65536).\n"
     "  --tcp-memory-bytes N Limit TCP payload arrays + bitmaps (default: 134217728).\n"
+    "  --rules PATH Load and apply validated JSON rules (optional).\n"
+    "  --rule-state-bytes N Limit stream-rule watermark arrays (default: 33554432).\n"
     "\n"
-    "A3: offline bounded TCP prefixes; detection, live capture and blocking are not implemented.\n"
+    "A4: offline rules with simulated decisions (enforced=false); live/inline are unavailable.\n"
     "Memory limit covers arrays, not total process RSS. Incomplete streams are reported.\n";
 
 constexpr std::int64_t MICROSECONDS_PER_SECOND = 1000000;
@@ -140,18 +145,79 @@ void print_packet(std::uint64_t number, const ParsedPacket& packet, const FlowRe
     output << '\n';
 }
 
+std::string_view rule_action_name(RuleAction action) {
+    if (action == RuleAction::Alert) {
+        return "alert";
+    }
+    return action == RuleAction::Drop ? "drop" : "pass";
+}
+
+std::string encoded_message(const std::string& message) {
+    // ASCII encoding protects Unicode separators/C1 as well as JSON C0 controls.
+    const auto encoded = nlohmann::json(message).dump(-1, ' ', true);
+    std::string result;
+    result.reserve(encoded.size());
+    for (const char byte : encoded) {
+        if (byte == '\x7f') {
+            result += "\\u007f";
+        } else {
+            result += byte;
+        }
+    }
+    return result;
+}
+
+void print_decision(std::uint64_t packet_number, const FlowResult& flow,
+                    const DetectionDecision& decision, std::ostream& output) {
+    const auto* observation = std::get_if<FlowObservation>(&flow);
+    for (const auto& match : decision.matches) {
+        output << "rule_match packet=" << packet_number << " flow_id=";
+        if (observation) {
+            output << observation->flow.flow_id;
+        } else {
+            output << "untracked";
+        }
+        output << " sid=" << match.sid << " action=" << rule_action_name(match.action)
+               << " scope=" << (match.scope == RuleScope::Packet ? "packet" : "stream")
+               << " match_end=" << match.end_offset << " message=" << encoded_message(match.message)
+               << " mode=pcap enforced=false\n";
+    }
+    output << "decision packet=" << packet_number
+           << " action=" << (decision.action == DetectionAction::Drop ? "drop" : "allow")
+           << " terminal_sid=";
+    if (decision.terminal_sid) {
+        output << *decision.terminal_sid;
+    } else {
+        output << "none";
+    }
+    output << " emitted=" << decision.matches.size() << " suppressed=" << decision.suppressed
+           << " stream_evaluated=" << (decision.stream_evaluated ? 1 : 0)
+           << " mode=pcap enforced=false\n";
+    if (!output) {
+        throw std::runtime_error("Output stream failed.");
+    }
+}
+
 int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyConfig tcp_config,
-                 std::ostream& output, std::ostream& errors) {
+                 const std::string& rule_path, RuleEngineConfig rule_config, std::ostream& output,
+                 std::ostream& errors) {
     std::uint64_t packets = 0;
     std::uint64_t parsed = 0;
     std::uint64_t skipped = 0;
     try {
+        std::optional<RuleEngine> detector;
+        if (!rule_path.empty()) {
+            detector.emplace(load_rule_file(rule_path), rule_config);
+        }
         FlowTable flows(config);
         TcpReassembler reassembler(tcp_config);
         const ReassemblyEventSink event_sink = [&](const ReassemblyUpdate& update) {
             print_reassembly_event(update, output);
         };
         const FlowExpirySink on_expire = [&](const FlowSnapshot& flow) {
+            if (detector) {
+                detector->forget_flow(flow.flow_id);
+            }
             reassembler.finish_flow(flow.flow_id, ReassemblyEnd::IdleTimeout, event_sink);
         };
         read_pcap(path, [&](const PacketEnvelope& envelope) {
@@ -168,9 +234,17 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
                         reassembly = reassembler.observe(*flow, *packet);
                     }
                 }
+                std::optional<DetectionDecision> decision;
+                if (detector) {
+                    decision = detector->evaluate(*packet, std::get_if<FlowObservation>(&tracked),
+                                                  reassembly ? &*reassembly : nullptr);
+                }
                 print_packet(packets, *packet, tracked, reassembly, output);
                 if (reassembly) {
                     print_reassembly_event(*reassembly, output);
+                }
+                if (decision) {
+                    print_decision(packets, tracked, *decision, output);
                 }
                 ++parsed;
             } else {
@@ -184,6 +258,9 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
             }
         });
         reassembler.finish_all(ReassemblyEnd::CaptureEnd, event_sink);
+        if (detector) {
+            detector->clear();
+        }
         output << "pcap_summary packets=" << packets << " parsed=" << parsed
                << " skipped=" << skipped << '\n';
         const auto stats = flows.stats();
@@ -195,12 +272,28 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
                << " rejected=" << tcp_stats.rejected << " active=" << tcp_stats.active_flows
                << " memory_bytes=" << tcp_stats.memory_bytes
                << " peak_memory_bytes=" << tcp_stats.peak_memory_bytes << '\n';
+        if (detector) {
+            const auto detection = detector->stats();
+            output << "detection_summary packets=" << detection.packets_evaluated
+                   << " events=" << detection.events_emitted
+                   << " suppressed=" << detection.suppressed
+                   << " simulated_drops=" << detection.drops << " active=" << detection.active_flows
+                   << " state_bytes=" << detection.state_bytes
+                   << " peak_state_bytes=" << detection.peak_state_bytes
+                   << " mode=pcap enforced=false\n";
+        }
         output.flush();
         errors.flush();
         if (!output || !errors) {
             throw std::runtime_error("Output stream failed.");
         }
         return 0;
+    } catch (const RuleLoadError& error) {
+        errors << "rule_error: " << error.what() << '\n';
+        return 1;
+    } catch (const DetectionError& error) {
+        errors << "detection_error: " << error.what() << '\n';
+        return 1;
     } catch (const std::exception& error) {
         errors << "capture_error: " << error.what() << '\n';
         return 1;
@@ -232,10 +325,13 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
     std::string_view input;
     FlowTableConfig config;
     TcpReassemblyConfig tcp_config;
+    RuleEngineConfig rule_config;
+    std::string_view rule_path;
     bool max_flows_seen = false;
     bool idle_timeout_seen = false;
     bool tcp_stream_seen = false;
     bool tcp_memory_seen = false;
+    bool rule_state_seen = false;
     for (std::size_t index = 0; index < arguments.size(); index += 2) {
         const auto option = arguments[index];
         const auto value = arguments[index + 1];
@@ -277,15 +373,26 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
             }
             tcp_config.memory_bytes = static_cast<std::size_t>(*number);
             tcp_memory_seen = true;
+        } else if (option == "--rules" && rule_path.empty()) {
+            rule_path = value;
+        } else if (option == "--rule-state-bytes" && !rule_state_seen) {
+            const auto number = positive_integer(value);
+            if (!number || *number > std::numeric_limits<std::size_t>::max()) {
+                return usage_error(errors);
+            }
+            rule_config.state_bytes = static_cast<std::size_t>(*number);
+            rule_state_seen = true;
         } else {
             return usage_error(errors);
         }
     }
-    if (mode != "pcap" || input.empty()) {
+    if (mode != "pcap" || input.empty() || (rule_state_seen && rule_path.empty())) {
         return usage_error(errors);
     }
     tcp_config.max_flows = config.max_entries;
-    return analyze_pcap(std::string{input}, config, tcp_config, output, errors);
+    rule_config.max_flows = config.max_entries;
+    return analyze_pcap(std::string{input}, config, tcp_config, std::string{rule_path}, rule_config,
+                        output, errors);
 }
 
 }  // namespace miniips

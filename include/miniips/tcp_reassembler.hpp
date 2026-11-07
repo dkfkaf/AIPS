@@ -47,6 +47,12 @@ struct TcpReassemblyConfig {
     std::size_t max_flows{10000};
 };
 
+struct ByteRange {
+    std::size_t begin{};
+    std::size_t end{};
+    bool operator==(const ByteRange&) const = default;
+};
+
 // Views are valid only until the next non-const reassembler operation.
 // 'closed' means an observed FIN has no preceding gap, never full inspection.
 struct ReassemblyUpdate {
@@ -60,6 +66,9 @@ struct ReassemblyUpdate {
     bool fin_seen{};
     bool closed{};
     std::optional<ReassemblyEnd> end;
+    // Accepted current payload positions inside the resulting first-seen prefix.
+    // Includes retransmissions; excludes pending/rejected/disabled bytes.
+    std::optional<ByteRange> payload_range;
 };
 using ReassemblyEventSink = std::function<void(const ReassemblyUpdate&)>;
 
@@ -112,7 +121,7 @@ class TcpReassembler {
     static ReassemblyUpdate snapshot(std::uint64_t id, FlowDirection direction,
                                      const Stream& stream);
     void process(Stream& stream, const ParsedPacket& packet, TcpMetadata tcp,
-                 ReassemblyIssues& events);
+                 ReassemblyIssues& events, std::optional<ByteRange>& accepted);
     bool allocate(Stream& stream, ReassemblyIssues& events);
     void release(Stream& stream) noexcept;
     void remove(std::unordered_map<std::uint64_t, Entry>::iterator position) noexcept;
