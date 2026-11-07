@@ -1,0 +1,549 @@
+{
+  "date": "2026-11-07",
+  "timezone": "Asia/Seoul",
+  "stage": "A3",
+  "result": "complete_with_documented_minors",
+  "approved_design": "docs/superpowers/specs/2026-11-07-a3-design.md",
+  "implementation_plan": "docs/superpowers/plans/2026-11-07-a3.md",
+  "workspace": "C:/Users/purt1/OneDrive/Desktop/AIPS",
+  "baseline": {
+    "head": "4c8982a6d977e2a09485be629dfb1daf1863855a",
+    "previous_source_audit": "build-a3-work/prior-source-audit.json",
+    "checked": 28,
+    "unchanged": 22,
+    "expected_a3_changes": 6,
+    "unexpected_changes": 0,
+    "note": "A0-A2 were uncommitted; review used saved baseline snapshots, no automatic commit/push."
+  },
+  "environment": {
+    "platform": "WSL2 Ubuntu 24.04.5 LTS x86_64",
+    "compiler": "GCC13.3",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "clang_tools": "18.1.3",
+    "libpcap": "1.10.4",
+    "log": "build-a3-work/environment.log",
+    "full_tests_user": "root",
+    "unprivileged_check": "runuser -u nobody, synthetic reassembly_hello.pcap only"
+  },
+  "contracts": {
+    "stream_bytes": 65536,
+    "memory_bytes": 134217728,
+    "max_flows": 10000,
+    "default_direction_allocation": 73728,
+    "memory_accounting": "owned payload arrays + presence bitmaps; metadata count-limited; not full RSS",
+    "overlap": "first-seen for pending and delivered prefix",
+    "sequence": "32-bit wrap-aware anchored prefix, half-space start/end ambiguity rejected",
+    "partial_capture": "midstream, before_anchor, unresolved gap/end and limit issues explicit",
+    "views": "valid until next non-const operation; synchronous non-reentrant sinks",
+    "lifetime": "Flow expiry/EOF remove; RST releases both arrays with only real prior gap history",
+    "id_order": "consume all tracked TCP observations in FlowTable-assigned new-ID order; retired/rejected IDs cannot restart",
+    "scope": "offline bounded TCP prefix only; no rules/JSONL/live/Inline/AI/firewall changes"
+  },
+  "acceptance": {
+    "hello_exact_bytes": "unit test: SYN99 + HEL100 + LO103 -> HELLO",
+    "reversed": "SYN99 + LO103 + HEL100 -> HELLO; pending bytes not exposed before gap fills",
+    "unit_core": 31,
+    "unit_lifecycle": 5,
+    "unit_cli": 9,
+    "previous_tests": 101,
+    "total": 146
+  },
+  "tdd": {
+    "core_initial": "missing-header compile RED; no runtime tests claimed",
+    "lifecycle_initial": "missing expiry-sink overload compile RED",
+    "cli_initial": "8 actual assertion failures, 1 existing invalid-option behavior passed",
+    "review_fixes": "3 regressions RED -> GREEN: false reset gap / preserved real gap / ambiguous FIN at and beyond half-space",
+    "logs": [
+      "build-a3-work/task1-red.log",
+      "build-a3-work/task2-red.log",
+      "build-a3-work/task3-red.log",
+      "build-a3-work/final-review-red.log",
+      "build-a3-work/final-review-green.log"
+    ]
+  },
+  "final_test_results": [
+    {
+      "profile": "debug",
+      "tests": 146,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a3-work/debug-tests.xml",
+      "log": "build-a3-work/debug-tests.log"
+    },
+    {
+      "profile": "release",
+      "tests": 146,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a3-work/release-tests.xml",
+      "log": "build-a3-work/release-tests.log"
+    },
+    {
+      "profile": "sanitize",
+      "tests": 146,
+      "failures": 0,
+      "skipped": 0,
+      "disabled": 0,
+      "junit": "build-a3-work/sanitize-tests.xml",
+      "log": "build-a3-work/sanitize-tests.log"
+    }
+  ],
+  "commands": {
+    "debug": "cmake --build build --parallel 2; ctest --test-dir build --output-on-failure --no-tests=error --output-junit <absolute workdir>/debug-tests.xml",
+    "release": "cmake --build build-release --parallel 2; ctest --test-dir build-release --output-on-failure --no-tests=error --output-junit <absolute workdir>/release-tests.xml (cache MINIIPS_ENABLE_CLANG_TIDY=ON)",
+    "sanitize": "cmake --build build-sanitize --parallel 2; ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure --no-tests=error --output-junit <absolute workdir>/sanitize-tests.xml",
+    "format": "cmake --build build --target format-check",
+    "manual": "build/tests/miniips_fixture_writer build-a3-work/fixtures; build/miniips --mode pcap --input build-a3-work/fixtures/reassembly_<case>.pcap",
+    "depth_options": "--tcp-stream-bytes 4 --tcp-memory-bytes 5, reassembly_hello.pcap",
+    "memory_options": "--tcp-memory-bytes 1, reassembly_hello.pcap",
+    "nobody": "runuser -u nobody -- ./build/miniips --mode pcap --input ./build-a3-work/fixtures/reassembly_hello.pcap",
+    "invocation": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc <script>"
+  },
+  "format_check": {
+    "result": "passed",
+    "log": "build-a3-work/format.log"
+  },
+  "independent_review": {
+    "model": "gpt-6-astra",
+    "reasoning_effort": "high",
+    "context": "fresh",
+    "read_only": true,
+    "report": "build-a3-work/review.md",
+    "critical": 0,
+    "important_found": 2,
+    "important_fixed": 2,
+    "important_remaining": 0,
+    "minors_deferred": 2,
+    "declined_to_judge": [],
+    "fix_verification": "one RED/GREEN pass + full three profiles; no re-review",
+    "deferred": [
+      "ACK after RST repeats reset console event",
+      "explicit invalid ReassemblyEnd cast in finish_all inconsistently clears active state; normal CLI supplies valid constants"
+    ]
+  },
+  "limitations": [
+    "bounded prefix, no full TCP normalization/ACK/window acceptance",
+    "SYN-less capture cannot recover unseen earlier data",
+    "memory figures account arrays, not measured process RSS",
+    "IPv6/VLAN/fragments/checksum validation unsupported as before",
+    "FIN/RST do not split A2 same-tuple flow statistics before idle expiry",
+    "no throughput/RSS benchmark or remote CI run",
+    "passed earlier packets cannot be retroactively blocked; no blocking implemented"
+  ],
+  "source_hashes": [
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "7fb777e915e83484b2576a4f145d1863af504c4aceb378cf4eec0cb8b376bfaa"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "90d057e89818bf17cbd6f8702b3c6cb6af1d2fbae72fd8cf93fcc9ed2635b2e5"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "e74561d8d9623bbcbda945535412b785df18557de47d5c448ab05b2e5af0bf29"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "164ab79ec450561b330a77509fc404afbb760fe6aec55a97f7100cf18c44e12b"
+    },
+    {
+      "path": "include/miniips/flow_table.hpp",
+      "sha256": "c18aca9c535208113d4430bb481514bb2c11fd4b397863531fa067118d283981"
+    },
+    {
+      "path": "include/miniips/flow.hpp",
+      "sha256": "32cba00047ae0084ddc5d0e039539715cdb247020f1e269c6baf40a5460e6eee"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "e980c631c3cd7eb742f1d66505602025aa76fd9c69c7825dc8d4088a1724584f"
+    },
+    {
+      "path": "include/miniips/tcp_reassembler.hpp",
+      "sha256": "96dd4d93737a17fb5050d818673cb545b4a4691ea41ef723bbb170559ef7c0ca"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "e7f136749ba30de178709ba71a0ed69c8d4b35c645c28b1ac3943a5d5b002374"
+    },
+    {
+      "path": "src/flow_table.cpp",
+      "sha256": "25b4518b3999cec85a7825c8f9597941215b6525c0b7d21e3438213388cbcdeb"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "878712b1d6863b404b633c7787036f8733e98076596b85553f507560a7ea0239"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "87ac88a3c419f4b6518cd6883e85eb5d6f610fe62c65ed4534668077a918ee5a"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "ae1b3f20584bc029f4da0332fc0d04b368d31a770b72c6bb91d56d281f8cdbc5"
+    },
+    {
+      "path": "src/tcp_reassembler.cpp",
+      "sha256": "3bb1e19c1e310b7547f4f6d4c4378e8fdddf9f07c99c5673c30f34107c6d47d7"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "bbcf5246b11d2af34d0f2695c520af0d0ba3a309f54161fe524563114a5e7883"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "tests/check_flow_cli.cmake",
+      "sha256": "2e1da62f99f74c18cbd6247075cce0901a16dd64869d762f10bb8ac244a1cfb7"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "00359966a14176bbbc75ae0c9ecadd37f70c9a7655912e1006b3172c4dfd69c0"
+    },
+    {
+      "path": "tests/fixtures/flow_fixtures.hpp",
+      "sha256": "4c34476496a43be5a45f29c6fdd8bdf0651f055e8cfbd49d066711f33d7fdf73"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    },
+    {
+      "path": "tests/fixtures/reassembly_fixtures.hpp",
+      "sha256": "fd3899ffef525011b2318bec5b4267a7dba3d89428822e9c5eb27745420b0705"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/test_cli_flow.cpp",
+      "sha256": "96fb66270438af796b1db32c64e3f9f9f03dd58e7910eefda8fbd6ac58370386"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli_reassembly.cpp",
+      "sha256": "19dd1e6eba36c08abefec685fcfdd3239f6d6e630ca3b3e8a723ecb4458dde38"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/test_flow_table.cpp",
+      "sha256": "3f30fea713c3328be6d8206b1c047e304ef0a03aacaaaaaa0376c8ad69b4bb00"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_reassembly_lifecycle.cpp",
+      "sha256": "26930f1b51d9a54e43741908cd68bffa4b77d976053155be6eb4b2f92c61032e"
+    },
+    {
+      "path": "tests/test_tcp_reassembler.cpp",
+      "sha256": "660e61176938e1bc6b45e65b5fdaf1380d49e6257b9170b9a1be447dbfc98e02"
+    }
+  ],
+  "log_files": [
+    {
+      "path": "build-a3-work/debug-build.log",
+      "sha256": "788dd2978bf006df02a7a04a64287fd7f19b4952fb17968b95acda4994259c5f"
+    },
+    {
+      "path": "build-a3-work/debug-tests.log",
+      "sha256": "60aa7f25da753e6703affedb50c5f3bac8b03e412d2f920273dcd5b813cd915b"
+    },
+    {
+      "path": "build-a3-work/environment.log",
+      "sha256": "67354e2e8ee3461eef2c4a4b75e29dffa717ecf717c97e28dd18edf633091ad4"
+    },
+    {
+      "path": "build-a3-work/final-review-green.log",
+      "sha256": "93b3c108916c69f5512a1b6ac56869a6ca3992517a80b8b7eca790172b088366"
+    },
+    {
+      "path": "build-a3-work/final-review-red-build.log",
+      "sha256": "11157faa1acabe3c4effa0c44cb793c2ed9a8bd4c0e761e1595173313a881601"
+    },
+    {
+      "path": "build-a3-work/final-review-red.log",
+      "sha256": "6e3072b9b05c63039fe9030b20990942376b87c152989b2a090ad4108c47997d"
+    },
+    {
+      "path": "build-a3-work/format.log",
+      "sha256": "2a2dfb33385f763495a7752721d7f4bcf54c5fe8cfbf144c88c3f1601c5a6653"
+    },
+    {
+      "path": "build-a3-work/help.log",
+      "sha256": "478849a8ec6cabffd125e220a4adc111cd952833bc37771aaccca02b431541c5"
+    },
+    {
+      "path": "build-a3-work/manual-ambiguous-fin.log",
+      "sha256": "b695c1996b5b352b65986458d92a817a0692ea90cfe79106e1db36f371bf2df7"
+    },
+    {
+      "path": "build-a3-work/manual-depth.log",
+      "sha256": "c0e4a043f9233ceab850258c6139dd9dd4b28882244f23a4d7d2da9d06159fa7"
+    },
+    {
+      "path": "build-a3-work/manual-gap.log",
+      "sha256": "4b424f848ce98b1145c6541b69aa82b1d99b760d59287c2c685ab2489ae0a6e6"
+    },
+    {
+      "path": "build-a3-work/manual-hello.log",
+      "sha256": "ba7cbddb41f86cf961d7918447599e2fdd8a646d889c9f9d102b8dd5d0c6c5af"
+    },
+    {
+      "path": "build-a3-work/manual-memory.log",
+      "sha256": "b364586a883b19938a1b6fe90c0188069abbdf7af749f6659e94f7d83914bc35"
+    },
+    {
+      "path": "build-a3-work/manual-nobody.log",
+      "sha256": "ba7cbddb41f86cf961d7918447599e2fdd8a646d889c9f9d102b8dd5d0c6c5af"
+    },
+    {
+      "path": "build-a3-work/manual-reset.log",
+      "sha256": "496f1b01a564e5744c9c8eec40784e7f9923d4b3f76ffbbb1afdc0bf75f3d35f"
+    },
+    {
+      "path": "build-a3-work/nobody-identity.log",
+      "sha256": "6527e0b2524b480c3d2cf0e83a00fc4e741c817f42a9757866bd97ec8b9ecb29"
+    },
+    {
+      "path": "build-a3-work/release-build-initial.log",
+      "sha256": "0d4ffb1efa34b0e0cfd148fae5071c9acec6832588c3ab108b8d3e0ab1de55ab"
+    },
+    {
+      "path": "build-a3-work/release-build.log",
+      "sha256": "2e266749d66cc9ab684e055d8095df6bd9f049efdf0e9a4eb858bb1818f3203c"
+    },
+    {
+      "path": "build-a3-work/release-tests.log",
+      "sha256": "ff9ca27e3c74e99889e3c0f845d1300359ca59f3a345639501eade65f64ec9ed"
+    },
+    {
+      "path": "build-a3-work/resume-debug-build.log",
+      "sha256": "8c35b1682f73592d30612d7b0fabdb384fcfff35cb5a076cb48b85b1368aa794"
+    },
+    {
+      "path": "build-a3-work/resume-release-build.log",
+      "sha256": "8c35b1682f73592d30612d7b0fabdb384fcfff35cb5a076cb48b85b1368aa794"
+    },
+    {
+      "path": "build-a3-work/resume-sanitize-build.log",
+      "sha256": "8c35b1682f73592d30612d7b0fabdb384fcfff35cb5a076cb48b85b1368aa794"
+    },
+    {
+      "path": "build-a3-work/sanitize-build.log",
+      "sha256": "88b027927af35bd7bafd052c6d84b9be9aa02da0491a32817fddf404b4c4f527"
+    },
+    {
+      "path": "build-a3-work/sanitize-tests-initial.log",
+      "sha256": "3c6686f8022c325ca9015107074ca537a00e246d3edefddfdebaf3f3b1d2715c"
+    },
+    {
+      "path": "build-a3-work/sanitize-tests.log",
+      "sha256": "60e8d4c47761365f79ccb70cc3c9cb32ee1e4deac4240cfa9a79416b08fff4e4"
+    },
+    {
+      "path": "build-a3-work/task1-build.log",
+      "sha256": "6360cb86c090b0d38b66794031b1879ef33faa173b9e28de201722790189549b"
+    },
+    {
+      "path": "build-a3-work/task1-extra-build.log",
+      "sha256": "11157faa1acabe3c4effa0c44cb793c2ed9a8bd4c0e761e1595173313a881601"
+    },
+    {
+      "path": "build-a3-work/task1-extra-red.log",
+      "sha256": "5610b00bca7670c660e99b30437fd3c464a3403f09832f5d6d31e90dd21788df"
+    },
+    {
+      "path": "build-a3-work/task1-red.log",
+      "sha256": "2e906a6926435699b77bee556d53d3f8e518ee2c622ec951fe1088440db3ae9f"
+    },
+    {
+      "path": "build-a3-work/task1-tests.log",
+      "sha256": "bbe5b47d775499ebce277abc41ee756f7d780c5fd155ecac964853daac19e853"
+    },
+    {
+      "path": "build-a3-work/task2-build.log",
+      "sha256": "bde589ae2369829332cd126a51773ac76f6c996ec104ef65eccc26256c96fac5"
+    },
+    {
+      "path": "build-a3-work/task2-red.log",
+      "sha256": "1ab20fe3b4da12d459cc663f8f97e38f330c535218cd6274b11e1becfb58f854"
+    },
+    {
+      "path": "build-a3-work/task2-tests.log",
+      "sha256": "019f38949aeecca6641b06fe3fc59190b4bd5511605b8d3d60bacaeb3785a62b"
+    },
+    {
+      "path": "build-a3-work/task3-build.log",
+      "sha256": "5940b719da382cdf618af10d5b7128818db1f965ded3680d022afb8ab8dc2aa3"
+    },
+    {
+      "path": "build-a3-work/task3-red-build.log",
+      "sha256": "2efe27ff54d5c5872fec0dfa4adb36c2992497e4318b8fc659935decece4b8ea"
+    },
+    {
+      "path": "build-a3-work/task3-red.log",
+      "sha256": "aef964ed5d8da2a9ddc363516c4f79a9c48b3a2c9d4c7baa77e46a4e0c93cd5e"
+    },
+    {
+      "path": "build-a3-work/version.log",
+      "sha256": "ce7186c87b331620ebe135eef5c7441d606eeb16afd7efdbeaa75dfc8e7f1db0"
+    },
+    {
+      "path": "build-a3-work/debug-tests.xml",
+      "sha256": "103487913a059ccba6914475dedf38592af04b91f126b8c2e0bf6d35b39b7ef3"
+    },
+    {
+      "path": "build-a3-work/release-tests.xml",
+      "sha256": "1240b77a6f8b8ae9feda9dff460f68dca6c7ff799969eab04f2a4d0df104c6d0"
+    },
+    {
+      "path": "build-a3-work/sanitize-tests.xml",
+      "sha256": "a1976a9b04ab1adaa26a10f3c806d8deebbf2053325f31c1e5666c95daa364ef"
+    },
+    {
+      "path": "build-a3-work/review.md",
+      "sha256": "27f0afb66804dee1d0d9ee823c83af5c087c13f491e87db24aeaed8e44ca563e"
+    },
+    {
+      "path": "build-a3-work/review-source-hashes.json",
+      "sha256": "28cd629b823a3437f45e79979d5a4e7c32bfb76578c976df86f17ef8c8e409b5"
+    },
+    {
+      "path": "build-a3-work/prior-source-audit.json",
+      "sha256": "4787a86031c8339bcdfd385de491492eed81fb35b4d3beb0717d81cd7425b910"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "build-a3-work/fixtures/reassembly_ambiguous_fin.pcap",
+      "sha256": "4e02e3ae2a674cd8bff79e200fcc5df804fa6b7027ab2b473b54b6e039805ea1"
+    },
+    {
+      "path": "build-a3-work/fixtures/reassembly_gap.pcap",
+      "sha256": "9d7f5a79c38bafab14d3f09dfdfb12d45c73f30286756e9b03b741b9eaab04ac"
+    },
+    {
+      "path": "build-a3-work/fixtures/reassembly_hello.pcap",
+      "sha256": "e1a951a2434ac1e09e8535ca8aa5223424e0a00f116876bb9b208d3ee70452e1"
+    },
+    {
+      "path": "build-a3-work/fixtures/reassembly_reset.pcap",
+      "sha256": "b7b98ea38e6cdf1e3df4cd4e3cd025565f37c2bb8e2ce350af3aff9c328c8a4d"
+    }
+  ],
+  "direct_cli_results": [
+    {
+      "case": "hello",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-hello.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=5 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=1 issues=none",
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=5 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728"
+      ]
+    },
+    {
+      "case": "gap",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-gap.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=0 stream_new_bytes=0 stream_pending_bytes=2 stream_closed=0 issues=gap_pending,gap,capture_end",
+        "pcap_summary packets=2 parsed=2 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=0 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728"
+      ]
+    },
+    {
+      "case": "depth",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-depth.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=4 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=0 issues=gap_pending,gap,depth_limit,capture_end",
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=4 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=5"
+      ]
+    },
+    {
+      "case": "memory",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-memory.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=0 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=0 issues=memory_limit,capture_end",
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=0 overlap_conflicts=0 rejected=1 active=0 memory_bytes=0 peak_memory_bytes=0"
+      ]
+    },
+    {
+      "case": "nobody",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-nobody.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=5 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=1 issues=none",
+        "pcap_summary packets=4 parsed=4 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=5 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728"
+      ]
+    },
+    {
+      "case": "reset",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-reset.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=0 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=0 issues=reset,capture_end",
+        "pcap_summary packets=3 parsed=3 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=1 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=73728"
+      ]
+    },
+    {
+      "case": "ambiguous-fin",
+      "exit_code": 0,
+      "log": "build-a3-work/manual-ambiguous-fin.log",
+      "summary": [
+        "reassembly_end flow_id=1 direction=fwd reason=capture_end stream_bytes=0 stream_new_bytes=0 stream_pending_bytes=0 stream_closed=1 issues=sequence_ambiguous",
+        "pcap_summary packets=3 parsed=3 skipped=0",
+        "flow_summary created=1 active=1 expired=0 rejected=0",
+        "reassembly_summary bytes_emitted=0 overlap_conflicts=0 rejected=0 active=0 memory_bytes=0 peak_memory_bytes=0"
+      ]
+    }
+  ]
+}

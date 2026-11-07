@@ -35,9 +35,8 @@ inline void write_le(std::ostream& output, std::uint32_t value, unsigned int cou
 }
 
 // The capture encoder is independent of the production libpcap reader.
-inline void write_pcap(const std::filesystem::path& path,
-                       std::initializer_list<PcapRecord> records, std::uint32_t link_type = 1,
-                       std::uint32_t magic = 0xA1B2C3D4U,
+inline void write_pcap(const std::filesystem::path& path, std::initializer_list<PcapRecord> records,
+                       std::uint32_t link_type = 1, std::uint32_t magic = 0xA1B2C3D4U,
                        std::uint32_t snapshot_bytes = 65535) {
     std::ofstream output(path, std::ios::binary | std::ios::trunc);
     output.exceptions(std::ios::failbit | std::ios::badbit);

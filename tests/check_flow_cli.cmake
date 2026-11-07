@@ -1,0 +1,55 @@
+if(NOT DEFINED MINIIPS_EXECUTABLE OR NOT EXISTS "${MINIIPS_EXECUTABLE}")
+    message(FATAL_ERROR "The miniips executable is missing.")
+endif()
+if(NOT DEFINED FIXTURE_DIRECTORY)
+    message(FATAL_ERROR "The fixture directory is missing.")
+endif()
+
+set(settings)
+set(expected_errors "")
+if(CLI_CASE STREQUAL "bidirectional")
+    set(expected_summary "flow_summary created=1 active=1 expired=0 rejected=0")
+    set(expected_fields "fwd_packets=2 bwd_packets=1 fwd_bytes=90 bwd_bytes=45")
+elseif(CLI_CASE STREQUAL "expired")
+    set(expected_summary "flow_summary created=2 active=1 expired=1 rejected=0")
+    set(expected_fields "flow_id=2 direction=fwd fwd_packets=1 bwd_packets=0")
+elseif(CLI_CASE STREQUAL "capacity")
+    set(settings --max-flows 1)
+    set(expected_summary "flow_summary created=1 active=1 expired=0 rejected=1")
+    set(expected_fields "flow_id=untracked direction=unknown")
+    set(expected_errors "flow_error packet=2 reason=capacity_exceeded")
+else()
+    message(FATAL_ERROR "Unknown Flow CLI case: ${CLI_CASE}")
+endif()
+
+execute_process(
+    COMMAND "${MINIIPS_EXECUTABLE}" --mode pcap
+        --input "${FIXTURE_DIRECTORY}/flow_${CLI_CASE}.pcap" ${settings}
+    RESULT_VARIABLE actual_exit
+    OUTPUT_VARIABLE output
+    ERROR_VARIABLE errors
+    TIMEOUT 5
+)
+if(NOT "${actual_exit}" STREQUAL "0")
+    message(FATAL_ERROR "Expected EOF exit 0, got ${actual_exit}: ${errors}")
+endif()
+foreach(field IN ITEMS "${expected_summary}" "${expected_fields}"
+        "pcap_summary packets=3 parsed=3 skipped=0" "flow_id=1 direction=bwd")
+    string(FIND "${output}" "${field}" position)
+    if(position LESS 0)
+        message(FATAL_ERROR "Missing Flow result ${field}: ${output}")
+    endif()
+endforeach()
+if(expected_errors STREQUAL "")
+    if(NOT errors STREQUAL "")
+        message(FATAL_ERROR "Unexpected stderr: ${errors}")
+    endif()
+else()
+    string(FIND "${errors}" "${expected_errors}" position)
+    if(position LESS 0)
+        message(FATAL_ERROR "Missing capacity warning: ${errors}")
+    endif()
+endif()
+if(output MATCHES "HELLO")
+    message(FATAL_ERROR "The CLI must not print raw payload.")
+endif()

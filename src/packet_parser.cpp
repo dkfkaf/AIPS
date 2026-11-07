@@ -14,9 +14,8 @@ constexpr std::size_t UDP_HEADER_BYTES = 8;
 
 // Callers establish the full header bounds before using these fixed field offsets.
 std::uint16_t read_u16(std::span<const std::byte> bytes, std::size_t offset) noexcept {
-    return static_cast<std::uint16_t>(
-        (std::to_integer<std::uint32_t>(bytes[offset]) << 8U) |
-        std::to_integer<std::uint32_t>(bytes[offset + 1]));
+    return static_cast<std::uint16_t>((std::to_integer<std::uint32_t>(bytes[offset]) << 8U) |
+                                      std::to_integer<std::uint32_t>(bytes[offset + 1]));
 }
 
 std::uint32_t read_u32(std::span<const std::byte> bytes, std::size_t offset) noexcept {
@@ -54,7 +53,7 @@ ParseResult parse_packet(const PacketEnvelope& envelope) noexcept {
     if ((version_ihl >> 4U) != 4) {
         return ParseError::InvalidIpv4Version;
     }
-    const std::size_t ip_header_bytes = (version_ihl & 0x0FU) * 4U;
+    const std::size_t ip_header_bytes = static_cast<std::size_t>(version_ihl & 0x0FU) * 4U;
     if (ip_header_bytes < IPV4_MIN_HEADER_BYTES) {
         return ParseError::InvalidIpv4HeaderLength;
     }
@@ -96,7 +95,7 @@ ParseResult parse_packet(const PacketEnvelope& envelope) noexcept {
             return ParseError::TruncatedTcpHeader;
         }
         const std::size_t tcp_header_bytes =
-            (std::to_integer<unsigned int>(transport[12]) >> 4U) * 4U;
+            (std::to_integer<std::size_t>(transport[12]) >> 4U) * 4U;
         if (tcp_header_bytes < TCP_MIN_HEADER_BYTES || tcp_header_bytes > transport.size()) {
             return ParseError::InvalidTcpHeaderLength;
         }

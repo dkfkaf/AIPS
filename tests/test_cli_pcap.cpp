@@ -1,5 +1,3 @@
-#include "miniips/cli.hpp"
-
 #include <gtest/gtest.h>
 
 #include <array>
@@ -10,6 +8,7 @@
 #include <string_view>
 
 #include "fixtures/packet_fixtures.hpp"
+#include "miniips/cli.hpp"
 #include "pcap_fixture.hpp"
 
 namespace miniips {
@@ -47,9 +46,8 @@ TEST(PcapCli, AcceptsInputOptionBeforeMode) {
 
 TEST(PcapCli, ContinuesAfterMalformedPacket) {
     test::TempPcap file;
-    test::write_pcap(file.path(),
-                     {test::record({std::byte{1}, std::byte{2}}),
-                      test::record(test::udp_packet())});
+    test::write_pcap(file.path(), {test::record({std::byte{1}, std::byte{2}}),
+                                   test::record(test::udp_packet())});
     const auto path = file.path().string();
     const std::array<std::string_view, 4> arguments{"--mode", "pcap", "--input", path};
     std::ostringstream output;

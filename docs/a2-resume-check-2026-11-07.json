@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-07",
+  "timezone": "Asia/Seoul",
+  "stage": "A2",
+  "result": "complete_reconfirmed",
+  "original_completion_date": "2026-11-06",
+  "original_evidence": "a2-validation-2026-11-06.json",
+  "source_verification": {
+    "reference": "source_hashes in original_evidence",
+    "files_checked": 28,
+    "changed_files": []
+  },
+  "fresh_verification": {
+    "configuration": "Debug",
+    "build": "ninja: no work to do.",
+    "tests": 101,
+    "failures": 0,
+    "skipped": 0,
+    "junit": "build-a2-work/resume-2026-11-07-tests.xml",
+    "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cmake --build build --parallel 2 >build-a2-work/resume-2026-11-07-build.log 2>&1; ctest --test-dir build --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/resume-2026-11-07-tests.xml >build-a2-work/resume-2026-11-07-tests.log 2>&1; tail -n 3 build-a2-work/resume-2026-11-07-build.log; tail -n 6 build-a2-work/resume-2026-11-07-tests.log'",
+    "exit_code": 0,
+    "output": "ninja: no work to do.\n        Start 101: pcap.unsupported\n101/101 Test #101: pcap.unsupported ...............................................   Passed    0.03 sec\n\n100% tests passed, 0 tests failed out of 101\n\nTotal Test time (real) =   2.71 sec\n"
+  },
+  "previous_quality_verification": {
+    "date": "2026-11-06",
+    "configurations": [
+      "Release with clang-tidy",
+      "ASan/UBSan"
+    ],
+    "tests_per_configuration": 101,
+    "failures": 0,
+    "note": "Existing successful evidence retained for unchanged source; these configurations were not rerun for this resume check."
+  },
+  "changes": "Resumption evidence and current ledger summary only; no production or test code changes.",
+  "unfinished_items_in_approved_A2": [],
+  "next_unstarted_stage": "A3 — TCP reassembly"
+}

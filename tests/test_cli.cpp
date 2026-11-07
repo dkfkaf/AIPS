@@ -1,11 +1,11 @@
-#include "miniips/cli.hpp"
-
 #include <gtest/gtest.h>
 
 #include <array>
 #include <sstream>
 #include <string>
 #include <string_view>
+
+#include "miniips/cli.hpp"
 
 namespace miniips {
 namespace {

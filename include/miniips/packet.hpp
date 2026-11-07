@@ -8,7 +8,7 @@
 
 namespace miniips {
 
-enum class PacketLayer { Ethernet };
+enum class PacketLayer : std::uint8_t { Ethernet };
 enum class TransportProtocol : std::uint8_t { Tcp = 6, Udp = 17 };
 
 // bytes is a borrowed capture view; original_length is the on-wire frame length.

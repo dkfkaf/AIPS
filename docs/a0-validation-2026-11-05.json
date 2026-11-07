@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-05",
+  "scope": "A0 validation environment recheck against the current A1 source tree",
+  "result": "blocked-before-build",
+  "environment": {
+    "host": "Windows PowerShell",
+    "project_target": "Linux",
+    "commands_not_found_on_path": [
+      "cmake", "ninja", "g++", "clang++", "clang-format", "clang-tidy", "docker", "podman", "ubuntu", "ubuntu2404"
+    ],
+    "wsl_path": "C:\\WINDOWS\\system32\\wsl.exe"
+  },
+  "commands": [
+    {
+      "command": "wsl.exe --list --verbose",
+      "execution_context": "restricted",
+      "exit_code": 1,
+      "output_note": "Native output was garbled by text decoding; no distribution list was obtained."
+    },
+    {
+      "command": "wsl.exe --list --verbose",
+      "execution_context": "elevated-tool-permission; Windows administrator status not determined",
+      "exit_code": 1,
+      "error_code": "Wsl/CallMsi/Install/REGDB_E_CLASSNOTREG",
+      "output_note": "Native localized output was garbled by text decoding; the ASCII error code was readable. No distribution list was obtained."
+    }
+  ],
+  "diagnostic_limits": [
+    "Service inspection in the restricted context could not open Service Control Manager.",
+    "WSL distribution installation and Linux package availability were not determined.",
+    "The underlying cause of the WSL installation/registration error was not established."
+  ],
+  "acceptance": {
+    "configure": "not-started: Linux environment inaccessible; no host CMake on PATH",
+    "build": "not-started: configure unavailable",
+    "help": "not-started: no verified built executable",
+    "ctest": "not-started: no Linux build environment",
+    "readme_instructions": "present; execution success remains unverified"
+  },
+  "tests_executed": 0,
+  "system_changes": "No explicit installation, service or firewall changes were performed. The WSL query itself reported an Install error.",
+  "next_requirement": "Restore a working Linux environment, then execute the README configure/build/help/CTest commands."
+}

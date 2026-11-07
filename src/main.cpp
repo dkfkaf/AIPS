@@ -1,8 +1,8 @@
-#include "miniips/cli.hpp"
-
 #include <iostream>
 #include <string_view>
 #include <vector>
+
+#include "miniips/cli.hpp"
 
 int main(int argc, char* argv[]) {
     std::vector<std::string_view> arguments;

@@ -1,5 +1,3 @@
-#include "miniips/capture_source.hpp"
-
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -9,6 +7,7 @@
 #include <vector>
 
 #include "fixtures/packet_fixtures.hpp"
+#include "miniips/capture_source.hpp"
 #include "pcap_fixture.hpp"
 
 namespace miniips {

@@ -41,8 +41,14 @@ add_library(miniips_packet STATIC src/packet_parser.cpp src/pcap_source.cpp)
 target_include_directories(miniips_packet PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(miniips_packet PRIVATE PkgConfig::PCAP)
 
+add_library(miniips_flow STATIC src/flow_table.cpp)
+target_include_directories(miniips_flow PUBLIC "${PROJECT_SOURCE_DIR}/include")
+
+add_library(miniips_reassembly STATIC src/tcp_reassembler.cpp)
+target_link_libraries(miniips_reassembly PUBLIC miniips_flow)
+
 add_library(miniips_cli STATIC src/cli.cpp)
-target_link_libraries(miniips_cli PRIVATE miniips_packet)
+target_link_libraries(miniips_cli PRIVATE miniips_packet miniips_flow miniips_reassembly)
 target_include_directories(miniips_cli PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_compile_definitions(miniips_cli PRIVATE MINIIPS_VERSION="${PROJECT_VERSION}")
 
@@ -67,6 +73,12 @@ if(MINIIPS_CLANG_FORMAT)
         COMMAND "${MINIIPS_CLANG_FORMAT}" --dry-run --Werror
             include/miniips/cli.hpp include/miniips/packet.hpp
             include/miniips/packet_parser.hpp include/miniips/capture_source.hpp
+            include/miniips/flow.hpp include/miniips/flow_table.hpp
+            src/flow_table.cpp tests/test_flow_table.cpp
+            include/miniips/tcp_reassembler.hpp src/tcp_reassembler.cpp
+            tests/test_tcp_reassembler.cpp tests/test_reassembly_lifecycle.cpp
+            tests/test_cli_reassembly.cpp tests/fixtures/reassembly_fixtures.hpp
+            tests/test_cli_flow.cpp tests/fixtures/flow_fixtures.hpp
             src/cli.cpp src/main.cpp src/packet_parser.cpp src/pcap_source.cpp
             tests/test_cli.cpp tests/test_packet_parser.cpp tests/test_pcap_source.cpp
             tests/test_cli_pcap.cpp tests/fixture_writer.cpp

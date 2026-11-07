@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 #include <variant>
 
@@ -7,7 +8,7 @@
 
 namespace miniips {
 
-enum class ParseError {
+enum class ParseError : std::uint8_t {
     UnsupportedLinkLayer,
     InvalidCaptureLength,
     TruncatedCapture,

@@ -1,5 +1,3 @@
-#include "miniips/packet_parser.hpp"
-
 #include <gtest/gtest.h>
 
 #include <array>
@@ -11,6 +9,7 @@
 #include <vector>
 
 #include "fixtures/packet_fixtures.hpp"
+#include "miniips/packet_parser.hpp"
 
 namespace miniips {
 namespace {
@@ -45,7 +44,9 @@ TEST(PacketParser, ParsesTcpFieldsAndPayload) {
     EXPECT_EQ(packet->ip_header_bytes, 20);
     EXPECT_EQ(packet->transport_header_bytes, 20);
     EXPECT_EQ(packet->captured_at.count(), 1250000);
-    ASSERT_TRUE(packet->tcp.has_value());
+    if (!packet->tcp.has_value()) {
+        FAIL() << "TCP metadata is missing.";
+    }
     EXPECT_EQ(packet->tcp->sequence_number, 0x01020304U);
     EXPECT_EQ(packet->tcp->acknowledgement_number, 0x05060708U);
     EXPECT_EQ(packet->tcp->flags, 0x18);
@@ -95,6 +96,8 @@ TEST(PacketParser, RejectsEveryTruncatedUdpPrefix) {
 
 TEST(PacketParser, RejectsUnsupportedInputLayer) {
     const auto bytes = test::tcp_packet();
+    // Deliberately supply an unknown layer to verify that the parser rejects it.
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     const PacketEnvelope envelope{bytes, 59, {}, static_cast<PacketLayer>(99)};
     expect_error(parse_packet(envelope), ParseError::UnsupportedLinkLayer);
 }

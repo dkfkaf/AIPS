@@ -1,0 +1,443 @@
+{
+  "date": "2026-11-06",
+  "timezone": "Asia/Seoul",
+  "stage": "A2 — bidirectional Flow tracking",
+  "result": "passed",
+  "approved_design": "superpowers/specs/2026-11-05-a2-design.md",
+  "implementation_plan": "superpowers/plans/2026-11-06-a2.md",
+  "baseline": {
+    "head": "4c8982a6d977e2a09485be629dfb1daf1863855a",
+    "previous_evidence": "a1-validation-2026-11-05-linux.json",
+    "state": "Existing A0/A1 uncommitted changes preserved; selected files copied to build-a2-work/baseline before A2."
+  },
+  "workspace": {
+    "path": "C:/Users/purt1/OneDrive/Desktop/AIPS",
+    "mode": "User-approved in-place inline implementation",
+    "committed": false,
+    "pushed": false,
+    "record_directory": "build-a2-work"
+  },
+  "environment": {
+    "os": "Ubuntu 24.04.5 LTS",
+    "kernel": "6.18.54.1-microsoft-standard-WSL2",
+    "gcc": "13.3.0",
+    "cmake": "3.28.3",
+    "ninja": "1.11.1",
+    "clang_tools": "18.1.3",
+    "libpcap": "1.10.4",
+    "libnetfilter_queue": "1.0.5",
+    "full_test_user": "root (uid 0)",
+    "additional_demo_user": "nobody (uid 65534)",
+    "observed_output": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n6.18.54.1-microsoft-standard-WSL2\ncmake version 3.28.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n1.11.1\n13.3.0\nUbuntu clang-format version 18.1.3 (1ubuntu1)\nUbuntu LLVM version 18.1.3\n  Optimized build.\n1.10.4\n1.0.5\nuid=0(root) gid=0(root) groups=0(root)\n"
+  },
+  "contracts": {
+    "identity": "Sorted IPv4/port endpoints plus protocol; fwd is first observed direction, not key order.",
+    "flow_ids": "Positive uint64 IDs, no reuse within a table lifetime; new ID after expiry.",
+    "default_max_entries": 10000,
+    "default_idle_timeout_seconds": 120,
+    "expiry": "Capture watermark never decreases; expire at idle >= timeout before lookup; valid timestamps on malformed frames also advance expiry.",
+    "capacity": "Reject new keys only, preserve existing keys; packet remains parsed, output flow_id=untracked and rejection count.",
+    "bytes": "IPv4 Total Length",
+    "iat": "Microseconds; clamp backward intervals to zero, keep direction timestamp maximum.",
+    "memory": "Fixed-size per-flow metadata with no retained packet/payload/string/stream buffer; entry count bounded by configuration.",
+    "tcp": "Observed SYN/SYN-ACK/final ACK heuristic plus FIN/RST states; no sequence validation. FIN/RST do not immediately remove a flow.",
+    "cli": [
+      "--max-flows N",
+      "--flow-idle-timeout-seconds N"
+    ],
+    "exit_codes": "0: EOF, which may include parsing skips or Flow rejections; 1: runtime error; 2: invalid arguments."
+  },
+  "acceptance": [
+    {
+      "case": "bidirectional",
+      "observed": "Three packets retain flow_id=1, directions fwd/bwd/fwd, fwd/bwd packets=2/1, IP bytes=90/45."
+    },
+    {
+      "case": "expiry",
+      "observed": "Last activity at 2s and same tuple at 122s gives flow_id=2; created=2 active=1 expired=1 rejected=0."
+    },
+    {
+      "case": "capacity",
+      "observed": "max-flows=1 marks a new UDP tuple untracked, still updates the existing reverse TCP flow; rejected=1, EOF exit=0."
+    },
+    {
+      "case": "unprivileged",
+      "observed": "Same bidirectional result with uid=65534."
+    }
+  ],
+  "tdd": {
+    "module_red": "Build exit 1 because FlowTable interface did not exist; no runtime unit tests were claimed to run in this first RED.",
+    "module_green": "22 Flow tests passed, full suite 89/89.",
+    "cli_red": "8 of 9 new FlowCli tests failed on missing output/settings; invalid-setting regression already passed.",
+    "cli_green": "Full suite 101/101 after implementation and 3 real-process checks.",
+    "quality_diagnostic": "Initial Release failed on an easily-swapped pair of test-helper arguments; helper changed to TcpMetadata while preserving flag literals and assertions. Production code passed the initial static check."
+  },
+  "test_breakdown": {
+    "google_tests": 86,
+    "ctest_process_and_fixture_tasks": 15,
+    "total": 101,
+    "added_flow_unit_tests": 22,
+    "added_cli_tests": 9,
+    "added_process_tests": 3,
+    "previous_tests": 67
+  },
+  "final_test_results": [
+    {
+      "configuration": "debug",
+      "tests": 101,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "build-a2-work/debug-tests.xml",
+      "sha256": "92350b4340956e432181dc960675896c848f699199722d2ceb4dc10df6240f3f"
+    },
+    {
+      "configuration": "release",
+      "tests": 101,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "build-a2-work/release-tests.xml",
+      "sha256": "8be32ff06e23fbef64a9a2cfb116595880196b7fff3fe64aca286f094d1ebf25"
+    },
+    {
+      "configuration": "sanitize",
+      "tests": 101,
+      "failures": 0,
+      "skipped": 0,
+      "junit": "build-a2-work/sanitize-tests.xml",
+      "sha256": "30984588cc508c98f8e6fcd4113631436808ef38796f763877b2326d09111543"
+    }
+  ],
+  "format_check": "passed",
+  "independent_review": {
+    "reviewer": "/root/review_a2",
+    "fresh_context": true,
+    "read_only": true,
+    "critical": 0,
+    "important": 0,
+    "minor": 0,
+    "result": "Code accepted; final quality/doc checks completed separately by implementer.",
+    "report": "build-a2-work/review.md",
+    "reviewed_files_unchanged": [
+      "include/miniips/flow.hpp",
+      "include/miniips/flow_table.hpp",
+      "src/flow_table.cpp",
+      "src/cli.cpp",
+      "CMakeLists.txt",
+      "tests/CMakeLists.txt",
+      "tests/fixture_writer.cpp",
+      "tests/fixtures/flow_fixtures.hpp",
+      "tests/check_flow_cli.cmake",
+      "tests/test_cli_flow.cpp"
+    ],
+    "test_helper_change": "Reviewer separately acknowledged typed TcpMetadata helper change without changed assertions or product behavior."
+  },
+  "limitations": [
+    "Expiry scan is O(active flows) per packet; throughput and RSS were not benchmarked.",
+    "TCP state is observational; same tuple reused before idle expiry may merge sessions.",
+    "Backward capture time uses a watermark approximation, not reconstruction of true event order.",
+    "Flow accepts parsed metadata; full header/payload consistency checks remain in parse_packet.",
+    "Raw AI state aggregates are stored, but no AI feature vector, inference or IPC is implemented.",
+    "No TCP reassembly, rules, live capture, NFQUEUE or real blocking is implemented in A2.",
+    "Full tests ran as root; only a demo was checked as a nonprivileged user.",
+    "Remote GitHub Actions was not run."
+  ],
+  "source_hashes": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "7890b6c99dfdef0ac53dea9532159fa68b92d84e942f4541d1886420300226d3"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "73cced49b7cb93f92dbac545d876c293f1ff06b6a7b52541fe6a8ede97e809a5"
+    },
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_flow_table.cpp",
+      "sha256": "3f30fea713c3328be6d8206b1c047e304ef0a03aacaaaaaa0376c8ad69b4bb00"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli_flow.cpp",
+      "sha256": "96fb66270438af796b1db32c64e3f9f9f03dd58e7910eefda8fbd6ac58370386"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "991f95077ad61a62b602364e17f2694fcc1a49621d7b65bd1118c743ad9b9f5b"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "ae1b3f20584bc029f4da0332fc0d04b368d31a770b72c6bb91d56d281f8cdbc5"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "87ac88a3c419f4b6518cd6883e85eb5d6f610fe62c65ed4534668077a918ee5a"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "878712b1d6863b404b633c7787036f8733e98076596b85553f507560a7ea0239"
+    },
+    {
+      "path": "src/flow_table.cpp",
+      "sha256": "89030fc7309f17d992f755ca913e89adc5d00be5424f2b03d676d5312495b838"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "5079cbde338e7a83e192f81caaf2ace5c44744aaef017d0f51d2398cbbab4d8d"
+    },
+    {
+      "path": "tests/check_flow_cli.cmake",
+      "sha256": "2e1da62f99f74c18cbd6247075cce0901a16dd64869d762f10bb8ac244a1cfb7"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    },
+    {
+      "path": "tests/fixtures/flow_fixtures.hpp",
+      "sha256": "4c34476496a43be5a45f29c6fdd8bdf0651f055e8cfbd49d066711f33d7fdf73"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "e980c631c3cd7eb742f1d66505602025aa76fd9c69c7825dc8d4088a1724584f"
+    },
+    {
+      "path": "include/miniips/flow_table.hpp",
+      "sha256": "729d35c6a1af9f863b322f70206fec3156629241d9625c6d36a6741acccce2d8"
+    },
+    {
+      "path": "include/miniips/flow.hpp",
+      "sha256": "32cba00047ae0084ddc5d0e039539715cdb247020f1e269c6baf40a5460e6eee"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "164ab79ec450561b330a77509fc404afbb760fe6aec55a97f7100cf18c44e12b"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "e74561d8d9623bbcbda945535412b785df18557de47d5c448ab05b2e5af0bf29"
+    }
+  ],
+  "log_files": [
+    {
+      "path": "build-a2-work/sanitize-tests.log",
+      "bytes": 16550,
+      "sha256": "9a46bcca3656082cd4010d3be7eeb8f153241ec2bd7197024471ee96690de0ed"
+    },
+    {
+      "path": "build-a2-work/sanitize-configure.log",
+      "bytes": 146,
+      "sha256": "04d8de4312315af259c8a0eb439639d4a2cf2d4b02e88593c6e656b8f63737ec"
+    },
+    {
+      "path": "build-a2-work/sanitize-build.log",
+      "bytes": 785,
+      "sha256": "02ffe540ec99e1e94da44cd228fcc99db4cd5fd68c9b4168b9df90c5b6a19fdd"
+    },
+    {
+      "path": "build-a2-work/flow-tests.log",
+      "bytes": 14070,
+      "sha256": "770d9e3dfe1a18c826ae9cad35af845e112c21e5f026bc94944386321a19a4c9"
+    },
+    {
+      "path": "build-a2-work/flow-red.log",
+      "bytes": 1046,
+      "sha256": "85f67c18e0c23b82c2d975291047e8e41c5d40a0b761a9f8c13a6d3b7e08c08b"
+    },
+    {
+      "path": "build-a2-work/flow-build.log",
+      "bytes": 431,
+      "sha256": "70fa1fcf0f66d2149be752607ed70afe3afa1526d8bf30d57a9b0d06431e9e1a"
+    },
+    {
+      "path": "build-a2-work/release-build-initial.log",
+      "bytes": 3314,
+      "sha256": "d35babf101f42f8b8ddb0b8e981982c6fde623b10f05e38361392565c1ccf425"
+    },
+    {
+      "path": "build-a2-work/format-check.log",
+      "bytes": 30,
+      "sha256": "2a2dfb33385f763495a7752721d7f4bcf54c5fe8cfbf144c88c3f1601c5a6653"
+    },
+    {
+      "path": "build-a2-work/flow-unit.log",
+      "bytes": 3107,
+      "sha256": "36cff1479a31d8594825c5fb1915117dabc4ee51924029875eb72f8151bafca8"
+    },
+    {
+      "path": "build-a2-work/release-configure.log",
+      "bytes": 145,
+      "sha256": "8f3db8064b5f23a750bf004197c6b9e2c77b4362b069b0a1e90e02e05403f0df"
+    },
+    {
+      "path": "build-a2-work/release-build.log",
+      "bytes": 142,
+      "sha256": "b1d82ef884e5ed8b2f2b8ac2a824359f502ce0218ac651ce320ff5af4f66549f"
+    },
+    {
+      "path": "build-a2-work/release-tests.log",
+      "bytes": 16548,
+      "sha256": "c3ee5d7adba90bec6d88c0d7a9180dd4d6fa66bcb23fd9431c28f4eebd21f9e8"
+    },
+    {
+      "path": "build-a2-work/cli-build.log",
+      "bytes": 948,
+      "sha256": "771c34356f00617175a465b160d5b493562a228faed76ece10adaadbc0e80146"
+    },
+    {
+      "path": "build-a2-work/baseline-tests.log",
+      "bytes": 10305,
+      "sha256": "62c50191eb954bdee18f09004cfe532110c073b0f6bf28c9316f38f370167677"
+    },
+    {
+      "path": "build-a2-work/debug-tests.log",
+      "bytes": 16532,
+      "sha256": "3ba58f024b980749cfde46f8cca849a1c3bad6adf41c9b9aff6acbc1508a611e"
+    },
+    {
+      "path": "build-a2-work/debug-final-build.log",
+      "bytes": 142,
+      "sha256": "b1d82ef884e5ed8b2f2b8ac2a824359f502ce0218ac651ce320ff5af4f66549f"
+    },
+    {
+      "path": "build-a2-work/cli-red.log",
+      "bytes": 6892,
+      "sha256": "71c5fdb1a18d1e39ed519775825109fb6106ff9ceae3f623b8f8554280a7d2bf"
+    },
+    {
+      "path": "build-a2-work/cli-red-build.log",
+      "bytes": 309,
+      "sha256": "36299f859fa892349d758403bcd1970250038f3f2bf256807e1cc6ed7af572a6"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "build-a2-work/demo-pcaps/flow_bidirectional.pcap",
+      "bytes": 249,
+      "sha256": "f55bf13e76176202c9bd71595da317b47ba1b7eb18d4e9bef66f5b1b5f6dc8b2"
+    },
+    {
+      "path": "build-a2-work/demo-pcaps/flow_expired.pcap",
+      "bytes": 249,
+      "sha256": "63cd54ebdddded3e822e14e7f43be92c9c619282b58ffcc4ec88c05080911234"
+    },
+    {
+      "path": "build-a2-work/demo-pcaps/flow_capacity.pcap",
+      "bytes": 235,
+      "sha256": "bd31c3be76eb94882749bd99460f999953fcd4446c8064a1294e68887343639e"
+    }
+  ],
+  "command_results": [
+    {
+      "name": "baseline",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'ctest --test-dir build --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/baseline-tests.xml >build-a2-work/baseline-tests.log 2>&1; a2_rc=$?; tail -n 6 build-a2-work/baseline-tests.log; exit $a2_rc'",
+      "exit_code": 0,
+      "output": "      Start 67: pcap.unsupported\n67/67 Test #67: pcap.unsupported ............................................   Passed    0.03 sec\n\n100% tests passed, 0 tests failed out of 67\n\nTotal Test time (real) =   3.16 sec\n"
+    },
+    {
+      "name": "flow-red",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'cmake --build build --target miniips_flow_tests --parallel 2 >build-a2-work/flow-red.log 2>&1; a2_rc=$?; tail -n 16 build-a2-work/flow-red.log; exit $a2_rc'",
+      "exit_code": 1,
+      "output": "[0/1] Re-running CMake...\n-- Configuring done (0.7s)\n-- Generating done (0.3s)\n-- Build files have been written to: /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build\n[1/2] Building CXX object tests/CMakeFiles/miniips_flow_tests.dir/test_flow_table.cpp.o\nFAILED: tests/CMakeFiles/miniips_flow_tests.dir/test_flow_table.cpp.o \n/usr/bin/c++  -I/mnt/c/Users/purt1/OneDrive/Desktop/AIPS/include -g -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -DGTEST_HAS_PTHREAD=1 -MD -MT tests/CMakeFiles/miniips_flow_tests.dir/test_flow_table.cpp.o -MF tests/CMakeFiles/miniips_flow_tests.dir/test_flow_table.cpp.o.d -o tests/CMakeFiles/miniips_flow_tests.dir/test_flow_table.cpp.o -c /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/tests/test_flow_table.cpp\n/mnt/c/Users/purt1/OneDrive/Desktop/AIPS/tests/test_flow_table.cpp:1:10: fatal error: miniips/flow_table.hpp: No such file or directory\n    1 | #include \"miniips/flow_table.hpp\"\n      |          ^~~~~~~~~~~~~~~~~~~~~~~~\ncompilation terminated.\nninja: build stopped: subcommand failed.\n"
+    },
+    {
+      "name": "flow-green",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cmake --build build --parallel 2 >build-a2-work/flow-build.log 2>&1; ./build/tests/miniips_flow_tests >build-a2-work/flow-unit.log 2>&1; ctest --test-dir build --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/flow-tests.xml >build-a2-work/flow-tests.log 2>&1; tail -n 5 build-a2-work/flow-unit.log; tail -n 5 build-a2-work/flow-tests.log'",
+      "exit_code": 0,
+      "output": "[----------] 21 tests from FlowTable (25 ms total)\n\n[----------] Global test environment tear-down\n[==========] 22 tests from 2 test suites ran. (29 ms total)\n[  PASSED  ] 22 tests.\n89/89 Test #89: pcap.unsupported ...............................................   Passed    0.03 sec\n\n100% tests passed, 0 tests failed out of 89\n\nTotal Test time (real) =   2.26 sec\n"
+    },
+    {
+      "name": "cli-red",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cmake --build build --target miniips_capture_tests --parallel 2 >build-a2-work/cli-red-build.log 2>&1; set +e; ./build/tests/miniips_capture_tests --gtest_filter=FlowCli.* >build-a2-work/cli-red.log 2>&1; a2_rc=$?; tail -n 22 build-a2-work/cli-red.log; exit $a2_rc'",
+      "exit_code": 1,
+      "output": "[  FAILED  ] FlowCli.MalformedPacketDoesNotAllocateFlow (1 ms)\n[ RUN      ] FlowCli.MalformedPacketAdvancesExpiryWithoutCreatingFlow\n/mnt/c/Users/purt1/OneDrive/Desktop/AIPS/tests/test_cli_flow.cpp:169: Failure\nExpected: (output.str().find(\"flow_summary created=1 active=0 expired=1 rejected=0\")) != (std::string::npos), actual: 18446744073709551615 vs 18446744073709551615\n\n[  FAILED  ] FlowCli.MalformedPacketAdvancesExpiryWithoutCreatingFlow (1 ms)\n[----------] 9 tests from FlowCli (26 ms total)\n\n[----------] Global test environment tear-down\n[==========] 9 tests from 1 test suite ran. (27 ms total)\n[  PASSED  ] 1 test.\n[  FAILED  ] 8 tests, listed below:\n[  FAILED  ] FlowCli.RequestReplyShareIdAndDirectionalIpCounters\n[  FAILED  ] FlowCli.SameTupleAfterExpiryGetsNewId\n[  FAILED  ] FlowCli.CapacityIsVisibleAndExistingFlowContinues\n[  FAILED  ] FlowCli.CustomTimeoutControlsExpiry\n[  FAILED  ] FlowCli.OptionsMayAppearInAnyOrder\n[  FAILED  ] FlowCli.HugeValidLimitsDoNotPreallocateFlowStorage\n[  FAILED  ] FlowCli.MalformedPacketDoesNotAllocateFlow\n[  FAILED  ] FlowCli.MalformedPacketAdvancesExpiryWithoutCreatingFlow\n\n 8 FAILED TESTS\n"
+    },
+    {
+      "name": "debug-integration-green",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; clang-format-18 -i include/miniips/flow.hpp include/miniips/flow_table.hpp src/flow_table.cpp src/cli.cpp tests/test_flow_table.cpp tests/test_cli_flow.cpp tests/fixtures/flow_fixtures.hpp tests/fixture_writer.cpp; cmake --build build --parallel 2 >build-a2-work/cli-build.log 2>&1; ctest --test-dir build --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/debug-tests.xml >build-a2-work/debug-tests.log 2>&1; cmake --build build --target format-check >build-a2-work/format-check.log 2>&1; tail -n 6 build-a2-work/debug-tests.log; cat build-a2-work/format-check.log'",
+      "exit_code": 0,
+      "output": "        Start 101: pcap.unsupported\n101/101 Test #101: pcap.unsupported ...............................................   Passed    0.03 sec\n\n100% tests passed, 0 tests failed out of 101\n\nTotal Test time (real) =   2.86 sec\n[1/1] Checking C++ formatting\n"
+    },
+    {
+      "name": "release-quality",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON -DMINIIPS_ENABLE_CLANG_TIDY=ON >build-a2-work/release-configure.log 2>&1; cmake --build build-release --parallel 2 >build-a2-work/release-build.log 2>&1; ctest --test-dir build-release --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/release-tests.xml >build-a2-work/release-tests.log 2>&1; tail -n 6 build-a2-work/release-tests.log'",
+      "exit_code": 1,
+      "output": ""
+    },
+    {
+      "name": "release-quality-final",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cp build-a2-work/release-build.log build-a2-work/release-build-initial.log; clang-format-18 -i tests/test_flow_table.cpp; cmake --build build-release --parallel 2 >build-a2-work/release-build.log 2>&1; ctest --test-dir build-release --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/release-tests.xml >build-a2-work/release-tests.log 2>&1; tail -n 6 build-a2-work/release-tests.log'",
+      "exit_code": 0,
+      "output": "        Start 101: pcap.unsupported\n101/101 Test #101: pcap.unsupported ...............................................   Passed    0.02 sec\n\n100% tests passed, 0 tests failed out of 101\n\nTotal Test time (real) =   2.12 sec\n"
+    },
+    {
+      "name": "sanitizer-and-debug-final",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/bash -lc 'set -e; cmake -S . -B build-sanitize -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DMINIIPS_ENABLE_SANITIZERS=ON >build-a2-work/sanitize-configure.log 2>&1; cmake --build build-sanitize --parallel 2 >build-a2-work/sanitize-build.log 2>&1; ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/sanitize-tests.xml >build-a2-work/sanitize-tests.log 2>&1; cmake --build build --parallel 2 >build-a2-work/debug-final-build.log 2>&1; ctest --test-dir build --output-on-failure --no-tests=error --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-a2-work/debug-tests.xml >build-a2-work/debug-tests.log 2>&1; cmake --build build --target format-check >build-a2-work/format-check.log 2>&1; tail -n 6 build-a2-work/sanitize-tests.log; tail -n 6 build-a2-work/debug-tests.log; cat build-a2-work/format-check.log'",
+      "exit_code": 0,
+      "output": "        Start 101: pcap.unsupported\n101/101 Test #101: pcap.unsupported ...............................................   Passed    0.03 sec\n\n100% tests passed, 0 tests failed out of 101\n\nTotal Test time (real) =   4.14 sec\n        Start 101: pcap.unsupported\n101/101 Test #101: pcap.unsupported ...............................................   Passed    0.02 sec\n\n100% tests passed, 0 tests failed out of 101\n\nTotal Test time (real) =   2.05 sec\n[1/1] Checking C++ formatting\n"
+    }
+  ],
+  "direct_cli_results": [
+    {
+      "name": "bidirectional",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build-a2-work/demo-pcaps/flow_bidirectional.pcap",
+      "exit_code": 0,
+      "output": "packet=1 timestamp_us=1000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=45 bwd_bytes=0\npacket=2 timestamp_us=2000000 protocol=tcp src_ip=198.51.100.2 src_port=8080 dst_ip=192.0.2.1 dst_port=12345 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=bwd fwd_packets=1 bwd_packets=1 fwd_bytes=45 bwd_bytes=45\npacket=3 timestamp_us=3000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=2 bwd_packets=1 fwd_bytes=90 bwd_bytes=45\npcap_summary packets=3 parsed=3 skipped=0\nflow_summary created=1 active=1 expired=0 rejected=0\n"
+    },
+    {
+      "name": "expired",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build-a2-work/demo-pcaps/flow_expired.pcap",
+      "exit_code": 0,
+      "output": "packet=1 timestamp_us=1000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=45 bwd_bytes=0\npacket=2 timestamp_us=2000000 protocol=tcp src_ip=198.51.100.2 src_port=8080 dst_ip=192.0.2.1 dst_port=12345 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=bwd fwd_packets=1 bwd_packets=1 fwd_bytes=45 bwd_bytes=45\npacket=3 timestamp_us=122000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=2 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=45 bwd_bytes=0\npcap_summary packets=3 parsed=3 skipped=0\nflow_summary created=2 active=1 expired=1 rejected=0\n"
+    },
+    {
+      "name": "capacity",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build-a2-work/demo-pcaps/flow_capacity.pcap --max-flows 1",
+      "exit_code": 0,
+      "output": "packet=1 timestamp_us=1000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=45 bwd_bytes=0\nflow_error packet=2 reason=capacity_exceeded\npacket=2 timestamp_us=2000000 protocol=udp src_ip=192.0.2.1 src_port=53 dst_ip=198.51.100.2 dst_port=54321 ip_bytes=31 ip_header_bytes=20 transport_header_bytes=8 payload_bytes=3 flow_id=untracked direction=unknown\npacket=3 timestamp_us=3000000 protocol=tcp src_ip=198.51.100.2 src_port=8080 dst_ip=192.0.2.1 dst_port=12345 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=bwd fwd_packets=1 bwd_packets=1 fwd_bytes=45 bwd_bytes=45\npcap_summary packets=3 parsed=3 skipped=0\nflow_summary created=1 active=1 expired=0 rejected=1\n"
+    },
+    {
+      "name": "bidirectional-unprivileged",
+      "command": "wsl.exe -d Ubuntu-24.04 -u nobody --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/sh -c 'id; exec ./build/miniips --mode pcap --input ./build-a2-work/demo-pcaps/flow_bidirectional.pcap'",
+      "exit_code": 0,
+      "output": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)\npacket=1 timestamp_us=1000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=1 bwd_packets=0 fwd_bytes=45 bwd_bytes=0\npacket=2 timestamp_us=2000000 protocol=tcp src_ip=198.51.100.2 src_port=8080 dst_ip=192.0.2.1 dst_port=12345 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=bwd fwd_packets=1 bwd_packets=1 fwd_bytes=45 bwd_bytes=45\npacket=3 timestamp_us=3000000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24 flow_id=1 direction=fwd fwd_packets=2 bwd_packets=1 fwd_bytes=90 bwd_bytes=45\npcap_summary packets=3 parsed=3 skipped=0\nflow_summary created=1 active=1 expired=0 rejected=0\n"
+    }
+  ]
+}

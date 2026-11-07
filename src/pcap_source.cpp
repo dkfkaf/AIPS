@@ -1,5 +1,3 @@
-#include "miniips/capture_source.hpp"
-
 #include <pcap/pcap.h>
 
 #include <chrono>
@@ -10,6 +8,8 @@
 #include <span>
 #include <stdexcept>
 #include <string>
+
+#include "miniips/capture_source.hpp"
 
 namespace miniips {
 namespace {
@@ -23,8 +23,8 @@ std::chrono::microseconds capture_time(const pcap_pkthdr& header) {
     if (seconds < 0 || microseconds < 0 || microseconds >= MICROSECONDS_PER_SECOND) {
         throw std::runtime_error("Invalid PCAP timestamp.");
     }
-    if (seconds > (std::numeric_limits<std::int64_t>::max() - microseconds) /
-                      MICROSECONDS_PER_SECOND) {
+    if (seconds >
+        (std::numeric_limits<std::int64_t>::max() - microseconds) / MICROSECONDS_PER_SECOND) {
         throw std::runtime_error("PCAP timestamp overflows microseconds.");
     }
     return std::chrono::microseconds{seconds * MICROSECONDS_PER_SECOND + microseconds};
@@ -40,10 +40,9 @@ void read_pcap(const std::string& path, const PacketHandler& on_packet) {
 
     char error_buffer[PCAP_ERRBUF_SIZE]{};
     using PcapHandle = std::unique_ptr<pcap_t, decltype(&pcap_close)>;
-    PcapHandle capture(
-        pcap_open_offline_with_tstamp_precision(path.c_str(), PCAP_TSTAMP_PRECISION_MICRO,
-                                               error_buffer),
-        &pcap_close);
+    PcapHandle capture(pcap_open_offline_with_tstamp_precision(
+                           path.c_str(), PCAP_TSTAMP_PRECISION_MICRO, error_buffer),
+                       &pcap_close);
     if (!capture) {
         throw std::runtime_error(std::string{"Cannot open PCAP: "} + error_buffer);
     }
@@ -63,8 +62,8 @@ void read_pcap(const std::string& path, const PacketHandler& on_packet) {
             return;
         }
         if (status == PCAP_ERROR) {
-            throw std::runtime_error(
-                std::string{"Cannot read PCAP: "} + pcap_geterr(capture.get()));
+            throw std::runtime_error(std::string{"Cannot read PCAP: "} +
+                                     pcap_geterr(capture.get()));
         }
         if (status != 1 || header == nullptr || (data == nullptr && header->caplen != 0)) {
             throw std::runtime_error("Unexpected offline PCAP read result.");

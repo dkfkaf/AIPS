@@ -1,0 +1,263 @@
+{
+  "date": "2026-11-05",
+  "timezone": "Asia/Seoul",
+  "stage": "A1 — offline PCAP input and Ethernet/IPv4/TCP/UDP parsing",
+  "result": "passed",
+  "prerequisite": {
+    "stage": "A0",
+    "result": "passed",
+    "evidence": "a0-validation-2026-11-05-linux.json"
+  },
+  "acceptance_criterion": "IMPLEMENTATION_PLAN.md A1: reproduce correct fields and harmless handling of damaged input using fixed PCAP/packet bytes.",
+  "scope": "Review the existing A1 implementation and execute acceptance checks. No production or test code changes in this A1 review; previous A0 changes retained.",
+  "baseline_git_commit": "4c8982a6d977e2a09485be629dfb1daf1863855a",
+  "environment": {
+    "distribution": "Ubuntu-24.04",
+    "os": "Ubuntu 24.04.5 LTS on WSL2",
+    "gcc": "13.3.0",
+    "libpcap": "1.10.4",
+    "working_directory": "/mnt/c/Users/purt1/OneDrive/Desktop/AIPS",
+    "test_user": "root",
+    "additional_cli_user": "nobody (uid 65534)"
+  },
+  "review": [
+    {
+      "criterion": "Offline libpcap input through EOF",
+      "evidence": "PcapSource tests; direct normal, mixed and empty PCAP runs"
+    },
+    {
+      "criterion": "Correct Ethernet/IPv4/TCP/UDP fields and payload bounds",
+      "evidence": "27 PacketParser tests; direct normal CLI metadata with fixed addresses, ports, timestamps, lengths and TCP fields"
+    },
+    {
+      "criterion": "Truncated and malformed packet handling",
+      "evidence": "All truncated prefixes, IHL/total-length/TCP-offset/UDP-length/caplen checks; mixed.pcap skips the bad frame and continues to UDP"
+    },
+    {
+      "criterion": "Unsupported input is distinguished",
+      "evidence": "IPv6/ARP/VLAN/fragment/IP-protocol tests; unsupported link type exits 1"
+    },
+    {
+      "criterion": "Container/file failures are not successful analyses",
+      "evidence": "Truncated container and missing file tests; direct truncated.pcap exits 1 without pcap_summary"
+    },
+    {
+      "criterion": "Metadata-only output and output failures",
+      "evidence": "PcapCli tests cover no raw payload, output failure and buffered flush failure"
+    }
+  ],
+  "checks": [
+    {
+      "name": "Fresh Debug build and full CTest",
+      "tests": 67,
+      "failures": 0,
+      "skipped": 0,
+      "junit_file": "build/a1-results.xml"
+    },
+    {
+      "name": "Fresh ASan/UBSan A1 subset",
+      "tests": 54,
+      "failures": 0,
+      "skipped": 0,
+      "breakdown": "27 parser + 13 source + 8 PCAP CLI + 6 fixture/process tasks",
+      "junit_file": "build-sanitize/a1-results.xml"
+    },
+    {
+      "name": "Direct CLI acceptance cases",
+      "cases": 5,
+      "expected_runtime_error_cases": [
+        "truncated",
+        "unsupported"
+      ]
+    },
+    {
+      "name": "Nonprivileged CLI smoke check",
+      "uid": 65534,
+      "result": "normal capture parsed successfully"
+    }
+  ],
+  "interfaces_reviewed": [
+    "parse_packet(const PacketEnvelope&) noexcept -> ParseResult",
+    "read_pcap(path, callback), callback-scoped borrowed bytes, unique_ptr pcap_close deleter",
+    "run_cli(args, output, errors), exit 0/1/2"
+  ],
+  "limitations": [
+    "Offline Ethernet IPv4 TCP/UDP only. Live input and NFQUEUE are later stages.",
+    "IPv6, VLAN, ARP, IP fragments and other IP protocols are skipped/rejected according to documented policy.",
+    "Checksums and application protocol semantics are not validated.",
+    "PCAPNG, other libpcap versions and arbitrary corrupted inputs are not exhaustively verified.",
+    "No A2 implementation or real network blocking was performed.",
+    "The nonprivileged check covers one normal capture; a normal developer account and a full unprivileged test suite were not configured or tested."
+  ],
+  "source_hashes": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "9cab7d19f48d26ab65ea5fabcd5c6fe9c52731d0e97c8eeba62d431f3c9cdd1f"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "e7a3bc1535f5af73155e7d4a35b0fb4db90a51abeac8720963c466d9374459d2"
+    },
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "6d051acbca9e3c71a7104f00791a03208e6a390cdbad8a8f503205113dd7cf9e"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "ae1b3f20584bc029f4da0332fc0d04b368d31a770b72c6bb91d56d281f8cdbc5"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "87ac88a3c419f4b6518cd6883e85eb5d6f610fe62c65ed4534668077a918ee5a"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "878712b1d6863b404b633c7787036f8733e98076596b85553f507560a7ea0239"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "23478aa8f1cdba8d1f81e6515f5fbca87f34cd1b4c6a7462dfecfb2877d2c620"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "e980c631c3cd7eb742f1d66505602025aa76fd9c69c7825dc8d4088a1724584f"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "164ab79ec450561b330a77509fc404afbb760fe6aec55a97f7100cf18c44e12b"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "e74561d8d9623bbcbda945535412b785df18557de47d5c448ab05b2e5af0bf29"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    }
+  ],
+  "fixtures": [
+    {
+      "path": "build/a1-review-fixtures/normal.pcap",
+      "bytes": 160,
+      "sha256": "c031fb5b17e32a171a24fef041657905db9930dcfd64b93df413a385a4fe1f4c"
+    },
+    {
+      "path": "build/a1-review-fixtures/mixed.pcap",
+      "bytes": 103,
+      "sha256": "dfdc6592eb5ea6aa3e89e4250b855bd8153d3f2d2a9078d97d196b6d66c3eb71"
+    },
+    {
+      "path": "build/a1-review-fixtures/empty.pcap",
+      "bytes": 24,
+      "sha256": "acc530668c8bc60b2d229281130b1899bfc81d70fdada5c34b3236c628f739c8"
+    },
+    {
+      "path": "build/a1-review-fixtures/truncated.pcap",
+      "bytes": 98,
+      "sha256": "250082334453a2ba5a56176a5c997df32e78b1e7af38592a4cddf983082ed2d5"
+    },
+    {
+      "path": "build/a1-review-fixtures/unsupported.pcap",
+      "bytes": 99,
+      "sha256": "305777c56a3a26485811dc4a97b478ff7fe6aa038179f3957953166876b06d37"
+    }
+  ],
+  "command_results": [
+    {
+      "name": "debug-build-fixtures-ctest",
+      "command": "cmake --build build --parallel 2; ./build/tests/miniips_fixture_writer ./build/a1-review-fixtures; ctest --test-dir build --output-on-failure --no-tests=error --output-junit build/a1-results.xml",
+      "exit_code": 0,
+      "output": "ninja: no work to do.\nInternal ctest changing into directory: /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build\nTest project /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build\n      Start  1: Cli.HelpShowsSupportedOptions\n 1/67 Test  #1: Cli.HelpShowsSupportedOptions ...............................   Passed    0.03 sec\n      Start  2: Cli.VersionIdentifiesProgram\n 2/67 Test  #2: Cli.VersionIdentifiesProgram ................................   Passed    0.01 sec\n      Start  3: Cli.MissingOptionFails\n 3/67 Test  #3: Cli.MissingOptionFails ......................................   Passed    0.01 sec\n      Start  4: Cli.UnknownOptionFails\n 4/67 Test  #4: Cli.UnknownOptionFails ......................................   Passed    0.01 sec\n      Start  5: Cli.MissingPcapInputFails\n 5/67 Test  #5: Cli.MissingPcapInputFails ...................................   Passed    0.01 sec\n      Start  6: Cli.ExtraArgumentsFail\n 6/67 Test  #6: Cli.ExtraArgumentsFail ......................................   Passed    0.01 sec\n      Start  7: Cli.EmptyOptionFails\n 7/67 Test  #7: Cli.EmptyOptionFails ........................................   Passed    0.01 sec\n      Start  8: PacketParser.ParsesTcpFieldsAndPayload\n 8/67 Test  #8: PacketParser.ParsesTcpFieldsAndPayload ......................   Passed    0.02 sec\n      Start  9: PacketParser.ParsesUdpFieldsAndPayload\n 9/67 Test  #9: PacketParser.ParsesUdpFieldsAndPayload ......................   Passed    0.01 sec\n      Start 10: PacketParser.RejectsEveryTruncatedTcpPrefix\n10/67 Test #10: PacketParser.RejectsEveryTruncatedTcpPrefix .................   Passed    0.01 sec\n      Start 11: PacketParser.RejectsEveryTruncatedUdpPrefix\n11/67 Test #11: PacketParser.RejectsEveryTruncatedUdpPrefix .................   Passed    0.01 sec\n      Start 12: PacketParser.RejectsUnsupportedInputLayer\n12/67 Test #12: PacketParser.RejectsUnsupportedInputLayer ...................   Passed    0.01 sec\n      Start 13: PacketParser.RejectsCaptureLongerThanWireLength\n13/67 Test #13: PacketParser.RejectsCaptureLongerThanWireLength .............   Passed    0.01 sec\n      Start 14: PacketParser.RejectsSnaplenTruncationEvenWhenIpFits\n14/67 Test #14: PacketParser.RejectsSnaplenTruncationEvenWhenIpFits .........   Passed    0.01 sec\n      Start 15: PacketParser.RejectsShortEthernetAndIpv4Headers\n15/67 Test #15: PacketParser.RejectsShortEthernetAndIpv4Headers .............   Passed    0.01 sec\n      Start 16: PacketParser.RejectsIpv6ArpAndVlanEtherTypes\n16/67 Test #16: PacketParser.RejectsIpv6ArpAndVlanEtherTypes ................   Passed    0.01 sec\n      Start 17: PacketParser.RejectsInvalidIpv4Version\n17/67 Test #17: PacketParser.RejectsInvalidIpv4Version ......................   Passed    0.01 sec\n      Start 18: PacketParser.RejectsTooSmallIpv4Ihl\n18/67 Test #18: PacketParser.RejectsTooSmallIpv4Ihl .........................   Passed    0.01 sec\n      Start 19: PacketParser.RejectsTruncatedIpv4Options\n19/67 Test #19: PacketParser.RejectsTruncatedIpv4Options ....................   Passed    0.01 sec\n      Start 20: PacketParser.RejectsIpv4TotalLengthSmallerThanHeader\n20/67 Test #20: PacketParser.RejectsIpv4TotalLengthSmallerThanHeader ........   Passed    0.01 sec\n      Start 21: PacketParser.RejectsIpv4TotalLengthBeyondCapture\n21/67 Test #21: PacketParser.RejectsIpv4TotalLengthBeyondCapture ............   Passed    0.01 sec\n      Start 22: PacketParser.RejectsFirstAndLaterFragments\n22/67 Test #22: PacketParser.RejectsFirstAndLaterFragments ..................   Passed    0.01 sec\n      Start 23: PacketParser.RejectsReservedIpv4Flag\n23/67 Test #23: PacketParser.RejectsReservedIpv4Flag ........................   Passed    0.01 sec\n      Start 24: PacketParser.RejectsUnsupportedIpProtocol\n24/67 Test #24: PacketParser.RejectsUnsupportedIpProtocol ...................   Passed    0.01 sec\n      Start 25: PacketParser.RejectsShortTcpHeader\n25/67 Test #25: PacketParser.RejectsShortTcpHeader ..........................   Passed    0.01 sec\n      Start 26: PacketParser.RejectsInvalidTcpDataOffset\n26/67 Test #26: PacketParser.RejectsInvalidTcpDataOffset ....................   Passed    0.01 sec\n      Start 27: PacketParser.RejectsShortUdpHeader\n27/67 Test #27: PacketParser.RejectsShortUdpHeader ..........................   Passed    0.01 sec\n      Start 28: PacketParser.RejectsUdpLengthMismatch\n28/67 Test #28: PacketParser.RejectsUdpLengthMismatch .......................   Passed    0.01 sec\n      Start 29: PacketParser.SkipsIpv4OptionsBeforeTcp\n29/67 Test #29: PacketParser.SkipsIpv4OptionsBeforeTcp ......................   Passed    0.01 sec\n      Start 30: PacketParser.SkipsTcpOptionsBeforePayload\n30/67 Test #30: PacketParser.SkipsTcpOptionsBeforePayload ...................   Passed    0.01 sec\n      Start 31: PacketParser.ExcludesEthernetPaddingFromPayload\n31/67 Test #31: PacketParser.ExcludesEthernetPaddingFromPayload .............   Passed    0.01 sec\n      Start 32: PacketParser.PreservesBinaryPayloadBytes\n32/67 Test #32: PacketParser.PreservesBinaryPayloadBytes ....................   Passed    0.01 sec\n      Start 33: PacketParser.AcceptsEmptyTcpPayload\n33/67 Test #33: PacketParser.AcceptsEmptyTcpPayload .........................   Passed    0.01 sec\n      Start 34: PacketParser.ReportsFragmentReason\n34/67 Test #34: PacketParser.ReportsFragmentReason ..........................   Passed    0.01 sec\n      Start 35: PcapSource.ReadsBothRecordsAndCaptureMetadata\n35/67 Test #35: PcapSource.ReadsBothRecordsAndCaptureMetadata ...............   Passed    0.02 sec\n      Start 36: PcapSource.AcceptsEmptyCapture\n36/67 Test #36: PcapSource.AcceptsEmptyCapture ..............................   Passed    0.01 sec\n      Start 37: PcapSource.ReportsMissingFile\n37/67 Test #37: PcapSource.ReportsMissingFile ...............................   Passed    0.01 sec\n      Start 38: PcapSource.RejectsUnsupportedLinkType\n38/67 Test #38: PcapSource.RejectsUnsupportedLinkType .......................   Passed    0.02 sec\n      Start 39: PcapSource.ReportsTruncatedGlobalHeader\n39/67 Test #39: PcapSource.ReportsTruncatedGlobalHeader .....................   Passed    0.02 sec\n      Start 40: PcapSource.ReportsTruncatedRecordBody\n40/67 Test #40: PcapSource.ReportsTruncatedRecordBody .......................   Passed    0.02 sec\n      Start 41: PcapSource.ConvertsNanosecondTimestampsToMicroseconds\n41/67 Test #41: PcapSource.ConvertsNanosecondTimestampsToMicroseconds .......   Passed    0.02 sec\n      Start 42: PcapSource.RejectsInvalidMicrosecondTimestamp\n42/67 Test #42: PcapSource.RejectsInvalidMicrosecondTimestamp ...............   Passed    0.02 sec\n      Start 43: PcapSource.PropagatesCallbackExceptionAndCanReopenFile\n43/67 Test #43: PcapSource.PropagatesCallbackExceptionAndCanReopenFile ......   Passed    0.02 sec\n      Start 44: PcapSource.RejectsStdinAndEmptyHandler\n44/67 Test #44: PcapSource.RejectsStdinAndEmptyHandler ......................   Passed    0.02 sec\n      Start 45: PcapSource.AcceptsSnapshotAtLimit\n45/67 Test #45: PcapSource.AcceptsSnapshotAtLimit ...........................   Passed    0.02 sec\n      Start 46: PcapSource.RejectsSnapshotAboveLimit\n46/67 Test #46: PcapSource.RejectsSnapshotAboveLimit ........................   Passed    0.03 sec\n      Start 47: PcapSource.PreservesCapturedAndOriginalLengthsSeparately\n47/67 Test #47: PcapSource.PreservesCapturedAndOriginalLengthsSeparately ....   Passed    0.01 sec\n      Start 48: PcapCli.PrintsMetadataAndCountsWithoutPayload\n48/67 Test #48: PcapCli.PrintsMetadataAndCountsWithoutPayload ...............   Passed    0.01 sec\n      Start 49: PcapCli.AcceptsInputOptionBeforeMode\n49/67 Test #49: PcapCli.AcceptsInputOptionBeforeMode ........................   Passed    0.01 sec\n      Start 50: PcapCli.ContinuesAfterMalformedPacket\n50/67 Test #50: PcapCli.ContinuesAfterMalformedPacket .......................   Passed    0.02 sec\n      Start 51: PcapCli.ReportsMissingCaptureAsRuntimeError\n51/67 Test #51: PcapCli.ReportsMissingCaptureAsRuntimeError .................   Passed    0.02 sec\n      Start 52: PcapCli.DoesNotReportSuccessfulSummaryForTruncatedCapture\n52/67 Test #52: PcapCli.DoesNotReportSuccessfulSummaryForTruncatedCapture ...   Passed    0.01 sec\n      Start 53: PcapCli.RejectsUnsupportedOrDuplicateOptions\n53/67 Test #53: PcapCli.RejectsUnsupportedOrDuplicateOptions ................   Passed    0.01 sec\n      Start 54: PcapCli.ReportsOutputFailure\n54/67 Test #54: PcapCli.ReportsOutputFailure ................................   Passed    0.02 sec\n      Start 55: PcapCli.ReportsFlushFailureAfterBufferedOutput\n55/67 Test #55: PcapCli.ReportsFlushFailureAfterBufferedOutput ..............   Passed    0.01 sec\n      Start 56: cli.help\n56/67 Test #56: cli.help ....................................................   Passed    0.03 sec\n      Start 57: cli.version\n57/67 Test #57: cli.version .................................................   Passed    0.02 sec\n      Start 58: cli.missing\n58/67 Test #58: cli.missing .................................................   Passed    0.02 sec\n      Start 59: cli.unknown\n59/67 Test #59: cli.unknown .................................................   Passed    0.02 sec\n      Start 60: cli.missing_pcap_input\n60/67 Test #60: cli.missing_pcap_input ......................................   Passed    0.02 sec\n      Start 61: cli.extra_arguments\n61/67 Test #61: cli.extra_arguments .........................................   Passed    0.02 sec\n      Start 62: pcap.prepare_fixtures\n62/67 Test #62: pcap.prepare_fixtures .......................................   Passed    0.03 sec\n      Start 63: pcap.normal\n63/67 Test #63: pcap.normal .................................................   Passed    0.03 sec\n      Start 64: pcap.mixed\n64/67 Test #64: pcap.mixed ..................................................   Passed    0.03 sec\n      Start 65: pcap.empty\n65/67 Test #65: pcap.empty ..................................................   Passed    0.03 sec\n      Start 66: pcap.truncated\n66/67 Test #66: pcap.truncated ..............................................   Passed    0.03 sec\n      Start 67: pcap.unsupported\n67/67 Test #67: pcap.unsupported ............................................   Passed    0.04 sec\n\n100% tests passed, 0 tests failed out of 67\n\nTotal Test time (real) =   1.95 sec\n"
+    },
+    {
+      "name": "a1-sanitizer-tests",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec env ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 ctest --test-dir build-sanitize --output-on-failure --no-tests=error -R '^(PacketParser[.]|PcapSource[.]|PcapCli[.]|pcap[.])' --output-junit /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-sanitize/a1-results.xml",
+      "exit_code": 0,
+      "output": "Internal ctest changing into directory: /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-sanitize\nTest project /mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-sanitize\n      Start  8: PacketParser.ParsesTcpFieldsAndPayload\n 1/54 Test  #8: PacketParser.ParsesTcpFieldsAndPayload ......................   Passed    0.08 sec\n      Start  9: PacketParser.ParsesUdpFieldsAndPayload\n 2/54 Test  #9: PacketParser.ParsesUdpFieldsAndPayload ......................   Passed    0.03 sec\n      Start 10: PacketParser.RejectsEveryTruncatedTcpPrefix\n 3/54 Test #10: PacketParser.RejectsEveryTruncatedTcpPrefix .................   Passed    0.03 sec\n      Start 11: PacketParser.RejectsEveryTruncatedUdpPrefix\n 4/54 Test #11: PacketParser.RejectsEveryTruncatedUdpPrefix .................   Passed    0.03 sec\n      Start 12: PacketParser.RejectsUnsupportedInputLayer\n 5/54 Test #12: PacketParser.RejectsUnsupportedInputLayer ...................   Passed    0.02 sec\n      Start 13: PacketParser.RejectsCaptureLongerThanWireLength\n 6/54 Test #13: PacketParser.RejectsCaptureLongerThanWireLength .............   Passed    0.03 sec\n      Start 14: PacketParser.RejectsSnaplenTruncationEvenWhenIpFits\n 7/54 Test #14: PacketParser.RejectsSnaplenTruncationEvenWhenIpFits .........   Passed    0.04 sec\n      Start 15: PacketParser.RejectsShortEthernetAndIpv4Headers\n 8/54 Test #15: PacketParser.RejectsShortEthernetAndIpv4Headers .............   Passed    0.03 sec\n      Start 16: PacketParser.RejectsIpv6ArpAndVlanEtherTypes\n 9/54 Test #16: PacketParser.RejectsIpv6ArpAndVlanEtherTypes ................   Passed    0.03 sec\n      Start 17: PacketParser.RejectsInvalidIpv4Version\n10/54 Test #17: PacketParser.RejectsInvalidIpv4Version ......................   Passed    0.03 sec\n      Start 18: PacketParser.RejectsTooSmallIpv4Ihl\n11/54 Test #18: PacketParser.RejectsTooSmallIpv4Ihl .........................   Passed    0.02 sec\n      Start 19: PacketParser.RejectsTruncatedIpv4Options\n12/54 Test #19: PacketParser.RejectsTruncatedIpv4Options ....................   Passed    0.02 sec\n      Start 20: PacketParser.RejectsIpv4TotalLengthSmallerThanHeader\n13/54 Test #20: PacketParser.RejectsIpv4TotalLengthSmallerThanHeader ........   Passed    0.03 sec\n      Start 21: PacketParser.RejectsIpv4TotalLengthBeyondCapture\n14/54 Test #21: PacketParser.RejectsIpv4TotalLengthBeyondCapture ............   Passed    0.02 sec\n      Start 22: PacketParser.RejectsFirstAndLaterFragments\n15/54 Test #22: PacketParser.RejectsFirstAndLaterFragments ..................   Passed    0.02 sec\n      Start 23: PacketParser.RejectsReservedIpv4Flag\n16/54 Test #23: PacketParser.RejectsReservedIpv4Flag ........................   Passed    0.02 sec\n      Start 24: PacketParser.RejectsUnsupportedIpProtocol\n17/54 Test #24: PacketParser.RejectsUnsupportedIpProtocol ...................   Passed    0.02 sec\n      Start 25: PacketParser.RejectsShortTcpHeader\n18/54 Test #25: PacketParser.RejectsShortTcpHeader ..........................   Passed    0.02 sec\n      Start 26: PacketParser.RejectsInvalidTcpDataOffset\n19/54 Test #26: PacketParser.RejectsInvalidTcpDataOffset ....................   Passed    0.02 sec\n      Start 27: PacketParser.RejectsShortUdpHeader\n20/54 Test #27: PacketParser.RejectsShortUdpHeader ..........................   Passed    0.02 sec\n      Start 28: PacketParser.RejectsUdpLengthMismatch\n21/54 Test #28: PacketParser.RejectsUdpLengthMismatch .......................   Passed    0.02 sec\n      Start 29: PacketParser.SkipsIpv4OptionsBeforeTcp\n22/54 Test #29: PacketParser.SkipsIpv4OptionsBeforeTcp ......................   Passed    0.02 sec\n      Start 30: PacketParser.SkipsTcpOptionsBeforePayload\n23/54 Test #30: PacketParser.SkipsTcpOptionsBeforePayload ...................   Passed    0.03 sec\n      Start 31: PacketParser.ExcludesEthernetPaddingFromPayload\n24/54 Test #31: PacketParser.ExcludesEthernetPaddingFromPayload .............   Passed    0.03 sec\n      Start 32: PacketParser.PreservesBinaryPayloadBytes\n25/54 Test #32: PacketParser.PreservesBinaryPayloadBytes ....................   Passed    0.03 sec\n      Start 33: PacketParser.AcceptsEmptyTcpPayload\n26/54 Test #33: PacketParser.AcceptsEmptyTcpPayload .........................   Passed    0.03 sec\n      Start 34: PacketParser.ReportsFragmentReason\n27/54 Test #34: PacketParser.ReportsFragmentReason ..........................   Passed    0.03 sec\n      Start 35: PcapSource.ReadsBothRecordsAndCaptureMetadata\n28/54 Test #35: PcapSource.ReadsBothRecordsAndCaptureMetadata ...............   Passed    0.06 sec\n      Start 36: PcapSource.AcceptsEmptyCapture\n29/54 Test #36: PcapSource.AcceptsEmptyCapture ..............................   Passed    0.03 sec\n      Start 37: PcapSource.ReportsMissingFile\n30/54 Test #37: PcapSource.ReportsMissingFile ...............................   Passed    0.04 sec\n      Start 38: PcapSource.RejectsUnsupportedLinkType\n31/54 Test #38: PcapSource.RejectsUnsupportedLinkType .......................   Passed    0.04 sec\n      Start 39: PcapSource.ReportsTruncatedGlobalHeader\n32/54 Test #39: PcapSource.ReportsTruncatedGlobalHeader .....................   Passed    0.03 sec\n      Start 40: PcapSource.ReportsTruncatedRecordBody\n33/54 Test #40: PcapSource.ReportsTruncatedRecordBody .......................   Passed    0.05 sec\n      Start 41: PcapSource.ConvertsNanosecondTimestampsToMicroseconds\n34/54 Test #41: PcapSource.ConvertsNanosecondTimestampsToMicroseconds .......   Passed    0.03 sec\n      Start 42: PcapSource.RejectsInvalidMicrosecondTimestamp\n35/54 Test #42: PcapSource.RejectsInvalidMicrosecondTimestamp ...............   Passed    0.04 sec\n      Start 43: PcapSource.PropagatesCallbackExceptionAndCanReopenFile\n36/54 Test #43: PcapSource.PropagatesCallbackExceptionAndCanReopenFile ......   Passed    0.03 sec\n      Start 44: PcapSource.RejectsStdinAndEmptyHandler\n37/54 Test #44: PcapSource.RejectsStdinAndEmptyHandler ......................   Passed    0.03 sec\n      Start 45: PcapSource.AcceptsSnapshotAtLimit\n38/54 Test #45: PcapSource.AcceptsSnapshotAtLimit ...........................   Passed    0.04 sec\n      Start 46: PcapSource.RejectsSnapshotAboveLimit\n39/54 Test #46: PcapSource.RejectsSnapshotAboveLimit ........................   Passed    0.03 sec\n      Start 47: PcapSource.PreservesCapturedAndOriginalLengthsSeparately\n40/54 Test #47: PcapSource.PreservesCapturedAndOriginalLengthsSeparately ....   Passed    0.04 sec\n      Start 48: PcapCli.PrintsMetadataAndCountsWithoutPayload\n41/54 Test #48: PcapCli.PrintsMetadataAndCountsWithoutPayload ...............   Passed    0.03 sec\n      Start 49: PcapCli.AcceptsInputOptionBeforeMode\n42/54 Test #49: PcapCli.AcceptsInputOptionBeforeMode ........................   Passed    0.04 sec\n      Start 50: PcapCli.ContinuesAfterMalformedPacket\n43/54 Test #50: PcapCli.ContinuesAfterMalformedPacket .......................   Passed    0.04 sec\n      Start 51: PcapCli.ReportsMissingCaptureAsRuntimeError\n44/54 Test #51: PcapCli.ReportsMissingCaptureAsRuntimeError .................   Passed    0.04 sec\n      Start 52: PcapCli.DoesNotReportSuccessfulSummaryForTruncatedCapture\n45/54 Test #52: PcapCli.DoesNotReportSuccessfulSummaryForTruncatedCapture ...   Passed    0.04 sec\n      Start 53: PcapCli.RejectsUnsupportedOrDuplicateOptions\n46/54 Test #53: PcapCli.RejectsUnsupportedOrDuplicateOptions ................   Passed    0.03 sec\n      Start 54: PcapCli.ReportsOutputFailure\n47/54 Test #54: PcapCli.ReportsOutputFailure ................................   Passed    0.03 sec\n      Start 55: PcapCli.ReportsFlushFailureAfterBufferedOutput\n48/54 Test #55: PcapCli.ReportsFlushFailureAfterBufferedOutput ..............   Passed    0.05 sec\n      Start 62: pcap.prepare_fixtures\n49/54 Test #62: pcap.prepare_fixtures .......................................   Passed    0.04 sec\n      Start 63: pcap.normal\n50/54 Test #63: pcap.normal .................................................   Passed    0.07 sec\n      Start 64: pcap.mixed\n51/54 Test #64: pcap.mixed ..................................................   Passed    0.03 sec\n      Start 65: pcap.empty\n52/54 Test #65: pcap.empty ..................................................   Passed    0.04 sec\n      Start 66: pcap.truncated\n53/54 Test #66: pcap.truncated ..............................................   Passed    0.04 sec\n      Start 67: pcap.unsupported\n54/54 Test #67: pcap.unsupported ............................................   Passed    0.04 sec\n\n100% tests passed, 0 tests failed out of 54\n\nTotal Test time (real) =   2.42 sec\n"
+    }
+  ],
+  "direct_cli_results": [
+    {
+      "name": "normal",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/normal.pcap",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "output": "packet=1 timestamp_us=1250000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24\npacket=2 timestamp_us=1250000 protocol=udp src_ip=192.0.2.1 src_port=53 dst_ip=198.51.100.2 dst_port=54321 ip_bytes=31 ip_header_bytes=20 transport_header_bytes=8 payload_bytes=3\npcap_summary packets=2 parsed=2 skipped=0\n"
+    },
+    {
+      "name": "mixed",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/mixed.pcap",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "output": "parse_error packet=1 reason=truncated_ethernet\npacket=2 timestamp_us=1250000 protocol=udp src_ip=192.0.2.1 src_port=53 dst_ip=198.51.100.2 dst_port=54321 ip_bytes=31 ip_header_bytes=20 transport_header_bytes=8 payload_bytes=3\npcap_summary packets=2 parsed=1 skipped=1\n"
+    },
+    {
+      "name": "empty",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/empty.pcap",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "output": "pcap_summary packets=0 parsed=0 skipped=0\n"
+    },
+    {
+      "name": "truncated",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/truncated.pcap",
+      "expected_exit": 1,
+      "exit_code": 1,
+      "output": "capture_error: Cannot read PCAP: truncated dump file; tried to read 59 captured bytes, only got 58\n"
+    },
+    {
+      "name": "unsupported",
+      "command": "wsl.exe -d Ubuntu-24.04 -u root --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/unsupported.pcap",
+      "expected_exit": 1,
+      "exit_code": 1,
+      "output": "capture_error: Unsupported PCAP link type; Ethernet (DLT_EN10MB) is required.\n"
+    },
+    {
+      "name": "normal-unprivileged",
+      "command": "wsl.exe -d Ubuntu-24.04 -u nobody --cd /mnt/c/Users/purt1/OneDrive/Desktop/AIPS --exec /bin/sh -c 'id; exec ./build/miniips --mode pcap --input ./build/a1-review-fixtures/normal.pcap'",
+      "expected_exit": 0,
+      "exit_code": 0,
+      "output": "uid=65534(nobody) gid=65534(nogroup) groups=65534(nogroup)\npacket=1 timestamp_us=1250000 protocol=tcp src_ip=192.0.2.1 src_port=12345 dst_ip=198.51.100.2 dst_port=8080 ip_bytes=45 ip_header_bytes=20 transport_header_bytes=20 payload_bytes=5 tcp_seq=16909060 tcp_ack=84281096 tcp_flags=24\npacket=2 timestamp_us=1250000 protocol=udp src_ip=192.0.2.1 src_port=53 dst_ip=198.51.100.2 dst_port=54321 ip_bytes=31 ip_header_bytes=20 transport_header_bytes=8 payload_bytes=3\npcap_summary packets=2 parsed=2 skipped=0\n"
+    }
+  ]
+}
