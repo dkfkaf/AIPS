@@ -32,12 +32,12 @@ endif()
 
 # System packages only: configuration never downloads third-party source code.
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap>=1.5.1)
+pkg_check_modules(PCAP REQUIRED IMPORTED_TARGET libpcap>=1.9.0)
 pkg_check_modules(NFQUEUE REQUIRED IMPORTED_TARGET libnetfilter_queue)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-add_library(miniips_packet STATIC src/packet_parser.cpp src/pcap_source.cpp)
+add_library(miniips_packet STATIC src/packet_parser.cpp src/pcap_source.cpp src/live_pcap_source.cpp)
 target_include_directories(miniips_packet PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(miniips_packet PRIVATE PkgConfig::PCAP)
 
@@ -99,6 +99,8 @@ if(MINIIPS_CLANG_FORMAT)
             include/miniips/event.hpp include/miniips/event_logger.hpp src/event_logger.cpp
             tests/test_event_logger.cpp
             include/miniips/engine.hpp src/engine.cpp tests/test_engine.cpp
+            include/miniips/live_pcap_source.hpp src/live_pcap_source.cpp src/pcap_timestamp.hpp
+            tests/test_live_source.cpp tests/test_live_metadata.cpp tests/test_cli_live.cpp
             include/miniips/event_publisher.hpp src/event_publisher.cpp tests/test_event_publisher.cpp
             tests/test_cli_jsonl.cpp
             tests/fixtures/jsonl_fixtures.hpp

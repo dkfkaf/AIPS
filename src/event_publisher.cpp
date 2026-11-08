@@ -69,9 +69,11 @@ std::string_view tcp_state(TcpFlowState state) {
     }
     return "unknown";
 }
-EventContext flow_context(const FlowSnapshot& flow, std::optional<std::chrono::microseconds> at) {
+EventContext flow_context(const FlowSnapshot& flow, std::optional<std::chrono::microseconds> at,
+                          CaptureMode mode) {
     EventContext context;
     context.captured_at = at;
+    context.mode = mode;
     context.flow_id = flow.flow_id;
     context.source = flow.first_source;
     context.destination = flow.first_source == flow.key.low ? flow.key.high : flow.key.low;
@@ -100,8 +102,8 @@ void warning(EventLogger& logger, const EventContext& context, const StreamSumma
     });
 }
 void end_flow(EventLogger& logger, const FlowEnd& ended,
-              std::optional<std::chrono::microseconds> watermark) noexcept {
-    const auto context = flow_context(ended.flow, watermark);
+              std::optional<std::chrono::microseconds> watermark, CaptureMode mode) noexcept {
+    const auto context = flow_context(ended.flow, watermark, mode);
     for (const auto& stream : ended.streams) {
         if (stream && stream->issues.any()) {
             auto oriented = context;
@@ -113,9 +115,10 @@ void end_flow(EventLogger& logger, const FlowEnd& ended,
         }
     }
     emit(logger, [&] {
-        const auto reason = ended.reason == FlowEndReason::Expired ? "expired"
-                            : ended.reason == FlowEndReason::Eof   ? "eof"
-                                                                   : "aborted";
+        const auto reason = ended.reason == FlowEndReason::Expired   ? "expired"
+                            : ended.reason == FlowEndReason::Eof     ? "eof"
+                            : ended.reason == FlowEndReason::Stopped ? "stopped"
+                                                                     : "aborted";
         auto fields = flow_fields(ended.flow, reason);
         fields["reassembly"] = Json::array();
         for (const auto& stream : ended.streams) {
@@ -124,9 +127,10 @@ void end_flow(EventLogger& logger, const FlowEnd& ended,
         return event(EventType::Flow, EventAction::Observe, context, std::move(fields));
     });
 }
-EventContext packet_context(const PacketResult& result) {
+EventContext packet_context(const PacketResult& result, CaptureMode mode) {
     EventContext context;
     context.captured_at = result.captured_at;
+    context.mode = mode;
     context.packet_number = result.packet_number;
     if (result.packet) {
         const auto& packet = *result.packet;
@@ -154,9 +158,10 @@ void publish_error(EventLogger& logger, const EventContext& context, ErrorInfo e
     });
 }
 
-void publish_packet(EventLogger& logger, const PacketResult& result) noexcept {
-    for (const auto& ended : result.expired) end_flow(logger, ended, result.watermark);
-    const auto context = packet_context(result);
+void publish_packet(EventLogger& logger, const PacketResult& result,
+                    const RunPublication& run) noexcept {
+    for (const auto& ended : result.expired) end_flow(logger, ended, result.watermark, run.mode);
+    const auto context = packet_context(result, run.mode);
     if (result.parse_error) {
         emit(logger, [&] {
             return event(EventType::ParseError, EventAction::Skip, context,
@@ -171,7 +176,7 @@ void publish_packet(EventLogger& logger, const PacketResult& result) noexcept {
             if (flow->created)
                 emit(logger, [&] {
                     return event(EventType::Flow, EventAction::Observe,
-                                 flow_context(flow->flow, result.captured_at),
+                                 flow_context(flow->flow, result.captured_at, run.mode),
                                  flow_fields(flow->flow, "created"));
                 });
         } else {
@@ -233,46 +238,68 @@ void publish_packet(EventLogger& logger, const PacketResult& result) noexcept {
     });
 }
 
-void publish_finish(EventLogger& logger, const FinishResult& result) noexcept {
-    for (const auto& flow : result.flows) end_flow(logger, flow, result.stats.watermark);
+void publish_finish(EventLogger& logger, const FinishResult& result,
+                    const RunPublication& run) noexcept {
+    for (const auto& flow : result.flows) end_flow(logger, flow, result.stats.watermark, run.mode);
     emit(logger, [&] {
         const auto& stats = result.stats;
         const auto logs = logger.stats();
         EventContext context;
         context.captured_at = stats.watermark;
-        return event(EventType::Stats, EventAction::None, context,
-                     {{"packets_total", stats.packets},
-                      {"packets_parsed", stats.parsed},
-                      {"packets_skipped", stats.skipped},
-                      {"processing_errors", stats.processing_errors},
-                      {"flows_created", stats.flow.created},
-                      {"flows_expired", stats.flow.expired},
-                      {"flows_active_at_finish", stats.flow.active},
-                      {"flows_rejected", stats.flow.rejected},
-                      {"reassembly_bytes_emitted", stats.tcp.bytes_emitted},
-                      {"reassembly_overlap_conflicts", stats.tcp.overlap_conflicts},
-                      {"reassembly_rejected", stats.tcp.rejected},
-                      {"incomplete_directions", stats.incomplete_directions},
-                      {"tcp_memory_bytes", stats.tcp.memory_bytes},
-                      {"tcp_peak_memory_bytes", stats.tcp.peak_memory_bytes},
-                      {"rule_state_bytes", stats.rules.state_bytes},
-                      {"rule_peak_state_bytes", stats.rules.peak_state_bytes},
-                      {"rules_enabled", stats.rules_enabled},
-                      {"rule_packets_evaluated", stats.rules.packets_evaluated},
-                      {"rule_matches_emitted", stats.rules.events_emitted},
-                      {"rule_matches_suppressed", stats.rules.suppressed},
-                      {"rule_matches_total", stats.rules.events_emitted + stats.rules.suppressed},
-                      {"detections", stats.detections},
-                      {"simulated_drop_packets", stats.rules.drops},
-                      {"actual_drop_packets", 0},
-                      {"capture_complete", stats.capture_complete},
-                      {"log_status_at_emit", "ok"},
-                      {"log_events_attempted", logs.attempted + 1},
-                      {"log_events_written", logs.written + 1},
-                      {"log_events_failed", logs.failed_events},
-                      {"log_events_dropped", logs.dropped},
-                      {"log_io_errors", logs.io_errors},
-                      {"alert_events_written", logs.alert_written}});
+        context.mode = run.mode;
+        auto row =
+            event(EventType::Stats, EventAction::None, context,
+                  {{"packets_total", stats.packets},
+                   {"packets_parsed", stats.parsed},
+                   {"packets_skipped", stats.skipped},
+                   {"processing_errors", stats.processing_errors},
+                   {"flows_created", stats.flow.created},
+                   {"flows_expired", stats.flow.expired},
+                   {"flows_active_at_finish", stats.flow.active},
+                   {"flows_rejected", stats.flow.rejected},
+                   {"reassembly_bytes_emitted", stats.tcp.bytes_emitted},
+                   {"reassembly_overlap_conflicts", stats.tcp.overlap_conflicts},
+                   {"reassembly_rejected", stats.tcp.rejected},
+                   {"incomplete_directions", stats.incomplete_directions},
+                   {"tcp_memory_bytes", stats.tcp.memory_bytes},
+                   {"tcp_peak_memory_bytes", stats.tcp.peak_memory_bytes},
+                   {"rule_state_bytes", stats.rules.state_bytes},
+                   {"rule_peak_state_bytes", stats.rules.peak_state_bytes},
+                   {"rules_enabled", stats.rules_enabled},
+                   {"rule_packets_evaluated", stats.rules.packets_evaluated},
+                   {"rule_matches_emitted", stats.rules.events_emitted},
+                   {"rule_matches_suppressed", stats.rules.suppressed},
+                   {"rule_matches_total", stats.rules.events_emitted + stats.rules.suppressed},
+                   {"detections", stats.detections},
+                   {"simulated_drop_packets", stats.rules.drops},
+                   {"actual_drop_packets", 0},
+                   {"capture_complete", stats.capture_complete},
+                   {"log_status_at_emit", "ok"},
+                   {"log_events_attempted", logs.attempted + 1},
+                   {"log_events_written", logs.written + 1},
+                   {"log_events_failed", logs.failed_events},
+                   {"log_events_dropped", logs.dropped},
+                   {"log_io_errors", logs.io_errors},
+                   {"alert_events_written", logs.alert_written}});
+        if (run.mode == CaptureMode::Live) {
+            const auto* capture = run.capture ? &*run.capture : nullptr;
+            row.fields["interface"] = run.interface;
+            row.fields["run_complete"] = run.run_complete;
+            row.fields["stop_reason"] = run.stop_reason;
+            row.fields["capture_stats"] = {
+                {"status",
+                 capture ? (capture->available ? "available" : "unavailable") : "not_open"},
+                {"ps_recv",
+                 capture && capture->available ? Json(capture->received) : Json(nullptr)},
+                {"ps_drop", capture && capture->available ? Json(capture->dropped) : Json(nullptr)},
+                {"ps_ifdrop",
+                 capture && capture->available ? Json(capture->interface_dropped) : Json(nullptr)},
+                {"ifdrop_availability", "platform_dependent"},
+                {"counter_bits", capture ? Json(capture->counter_bits) : Json(nullptr)},
+                {"sample", "before_close"},
+                {"error", capture ? capture->error.substr(0, 4096) : ""}};
+        }
+        return row;
     });
 }
 }  // namespace miniips

@@ -20,6 +20,7 @@
 #include "miniips/capture_source.hpp"
 #include "miniips/event_publisher.hpp"
 #include "miniips/flow_table.hpp"
+#include "miniips/live_pcap_source.hpp"
 #include "miniips/packet_parser.hpp"
 #include "miniips/rule_engine.hpp"
 #include "miniips/rule_loader.hpp"
@@ -31,11 +32,15 @@ namespace {
 constexpr std::string_view HELP_TEXT =
     "Usage: miniips --help | --version\n"
     "       miniips --mode pcap --input <file.pcap>\n"
+    "       miniips --mode live --interface <name>\n"
     "\n"
     "Options:\n"
     "  --help       Show this help message.\n"
     "  --version    Show the program version.\n"
     "  --mode pcap  Analyze an offline Ethernet IPv4 TCP/UDP capture.\n"
+    "  --mode live  Inspect an Ethernet interface without blocking traffic.\n"
+    "  --interface NAME Select the live capture interface.\n"
+    "  --packet-count N Stop live capture after N frames (optional).\n"
     "  --input PATH Read packets from this capture file.\n"
     "  --max-flows N Limit active flows (default: 10000).\n"
     "  --flow-idle-timeout-seconds N Expire idle flows (default: 120).\n"
@@ -45,7 +50,7 @@ constexpr std::string_view HELP_TEXT =
     "  --log PATH  Create a new JSONL file; '-' selects JSONL-only stdout.\n"
     "  --rule-state-bytes N Limit stream-rule watermark arrays (default: 33554432).\n"
     "\n"
-    "A5: offline JSONL and simulated decisions (enforced=false); live/inline are unavailable.\n"
+    "A6: PCAP/live decisions are simulated (enforced=false); inline is unavailable.\n"
     "Memory limit covers arrays, not total process RSS. Incomplete streams are reported.\n";
 
 constexpr std::int64_t MICROSECONDS_PER_SECOND = 1000000;
@@ -171,7 +176,7 @@ std::string encoded_message(const std::string& message) {
 }
 
 void print_decision(std::uint64_t packet_number, const FlowResult& flow,
-                    const DetectionDecision& decision, std::ostream& output) {
+                    const DetectionDecision& decision, std::ostream& output, CaptureMode mode) {
     const auto* observation = std::get_if<FlowObservation>(&flow);
     for (const auto& match : decision.matches) {
         output << "rule_match packet=" << packet_number << " flow_id=";
@@ -183,7 +188,7 @@ void print_decision(std::uint64_t packet_number, const FlowResult& flow,
         output << " sid=" << match.sid << " action=" << rule_action_name(match.action)
                << " scope=" << (match.scope == RuleScope::Packet ? "packet" : "stream")
                << " match_end=" << match.end_offset << " message=" << encoded_message(match.message)
-               << " mode=pcap enforced=false\n";
+               << " mode=" << capture_mode_name(mode) << " enforced=false\n";
     }
     output << "decision packet=" << packet_number
            << " action=" << (decision.action == DetectionAction::Drop ? "drop" : "allow")
@@ -195,15 +200,15 @@ void print_decision(std::uint64_t packet_number, const FlowResult& flow,
     }
     output << " emitted=" << decision.matches.size() << " suppressed=" << decision.suppressed
            << " stream_evaluated=" << (decision.stream_evaluated ? 1 : 0)
-           << " mode=pcap enforced=false\n";
+           << " mode=" << capture_mode_name(mode) << " enforced=false\n";
     if (!output) {
         throw std::runtime_error("Output stream failed.");
     }
 }
 
-void print_summary(const EngineStats& stats, std::ostream& output) {
-    output << "pcap_summary packets=" << stats.packets << " parsed=" << stats.parsed
-           << " skipped=" << stats.skipped << '\n';
+void print_summary(const EngineStats& stats, std::ostream& output, CaptureMode mode) {
+    output << (mode == CaptureMode::Pcap ? "pcap_summary packets=" : "live_summary packets=")
+           << stats.packets << " parsed=" << stats.parsed << " skipped=" << stats.skipped << '\n';
     output << "flow_summary created=" << stats.flow.created << " active=" << stats.flow.active
            << " expired=" << stats.flow.expired << " rejected=" << stats.flow.rejected << '\n';
     output << "reassembly_summary bytes_emitted=" << stats.tcp.bytes_emitted
@@ -218,7 +223,7 @@ void print_summary(const EngineStats& stats, std::ostream& output) {
                << " simulated_drops=" << detection.drops << " active=" << detection.active_flows
                << " state_bytes=" << detection.state_bytes
                << " peak_state_bytes=" << detection.peak_state_bytes
-               << " mode=pcap enforced=false\n";
+               << " mode=" << capture_mode_name(mode) << " enforced=false\n";
     }
 }
 void print_ended(const FlowEnd& ended, std::ostream& output) {
@@ -228,9 +233,11 @@ void print_ended(const FlowEnd& ended, std::ostream& output) {
 }
 struct ProcessingAbort {};
 
-int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyConfig tcp_config,
-                 const std::string& rule_path, RuleEngineConfig rule_config,
-                 const std::string& log_path, std::ostream& output, std::ostream& errors) {
+int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemblyConfig tcp_config,
+                    const std::string& rule_path, RuleEngineConfig rule_config,
+                    const std::string& log_path, std::ostream& output, std::ostream& errors,
+                    CaptureMode mode, std::optional<std::uint64_t> packet_limit,
+                    const StopRequest& stop) {
     try {
         std::optional<RuleSet> rules;
         if (!rule_path.empty()) rules = load_rule_file(rule_path);
@@ -244,10 +251,24 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
         else if (!log_path.empty())
             logger.emplace(std::filesystem::path{log_path});
         bool aborted = false;
+        bool log_reported = false;
+        RunPublication run;
+        run.mode = mode;
+        run.interface = mode == CaptureMode::Live ? path : "";
+        run.stop_reason = "error";
+        std::optional<LivePcapSource> live;
+        const auto report_log_failure = [&] {
+            if (logger && logger->failed() && !log_reported) {
+                log_reported = true;
+                errors << "log_error: JSONL output failed; remaining inspection continued.\n";
+                errors.flush();
+            }
+        };
         try {
-            read_pcap(path, [&](const PacketEnvelope& envelope) {
+            const PacketHandler consume = [&](const PacketEnvelope& envelope) {
                 const auto result = engine.inspect(envelope);
-                if (logger) publish_packet(*logger, result);
+                if (logger) publish_packet(*logger, result, run);
+                if (mode == CaptureMode::Live) report_log_failure();
                 if (!json_stdout) {
                     for (const auto& ended : result.expired) print_ended(ended, output);
                     if (result.packet && result.flow && !result.processing_error) {
@@ -256,7 +277,7 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
                         if (result.reassembly) print_reassembly_event(*result.reassembly, output);
                         if (result.decision)
                             print_decision(result.packet_number, *result.flow, *result.decision,
-                                           output);
+                                           output, mode);
                     }
                 }
                 if (result.parse_error) {
@@ -275,7 +296,21 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
                 if ((!json_stdout && !output) || !errors) {
                     throw std::runtime_error("Output stream failed.");
                 }
-            });
+            };
+            if (mode == CaptureMode::Live) {
+                live.emplace(LiveCaptureConfig{path, packet_limit});
+                if (!live->activation_warning().empty()) {
+                    errors << "capture_warning: " << live->activation_warning() << '\n';
+                }
+                errors << "live_ready interface=" << path << " mode=live enforced=false\n";
+                errors.flush();
+                if (!errors) throw std::runtime_error("Output stream failed.");
+                const auto stopped = live->run(consume, stop);
+                run.stop_reason = live_stop_name(stopped.reason);
+                run.run_complete = true;
+            } else {
+                read_pcap(path, consume);
+            }
         } catch (const ProcessingAbort&) {
             aborted = true;  // publish_packet already emitted the owned processing error.
         } catch (const std::exception& error) {
@@ -283,23 +318,36 @@ int analyze_pcap(const std::string& path, FlowTableConfig config, TcpReassemblyC
             errors << "capture_error: " << error.what() << '\n';
             if (logger) {
                 EventContext context;
+                context.mode = mode;
                 context.captured_at = engine.stats().watermark;
                 publish_error(*logger, context,
                               {"capture", "read_or_processing_failed", error.what()});
             }
         }
-        const auto ended = engine.finish(aborted ? EngineEnd::Aborted : EngineEnd::Eof);
-        if (logger) publish_finish(*logger, ended);
+        if (live) run.capture = live->snapshot_stats();
+        const auto ended = engine.finish(aborted                     ? EngineEnd::Aborted
+                                         : mode == CaptureMode::Live ? EngineEnd::Stopped
+                                                                     : EngineEnd::Eof);
+        if (logger) publish_finish(*logger, ended, run);
         if (!json_stdout && !aborted) {
             for (const auto& flow : ended.flows) print_ended(flow, output);
-            print_summary(ended.stats, output);
+            print_summary(ended.stats, output, mode);
         } else if (json_stdout)
-            print_summary(ended.stats, errors);
+            print_summary(ended.stats, errors, mode);
+        if (mode == CaptureMode::Live && run.capture) {
+            auto& summary = json_stdout ? errors : output;
+            const auto& capture = *run.capture;
+            summary << "capture_summary status="
+                    << (capture.available ? "available" : "unavailable")
+                    << " ps_recv=" << capture.received << " ps_drop=" << capture.dropped
+                    << " ps_ifdrop=" << capture.interface_dropped
+                    << " ifdrop_availability=platform_dependent"
+                    << " stop_reason=" << run.stop_reason << '\n';
+        }
         bool log_complete = true;
         if (logger) {
             log_complete = logger->finish();
-            if (!log_complete)
-                errors << "log_error: JSONL output failed; remaining inspection continued.\n";
+            if (!log_complete) report_log_failure();
             const auto logs = logger->stats();
             errors << "logger_summary attempted=" << logs.attempted << " written=" << logs.written
                    << " failed=" << logs.failed_events << " dropped=" << logs.dropped
@@ -329,8 +377,8 @@ int usage_error(std::ostream& errors) {
 
 }  // namespace
 
-int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
-            std::ostream& errors) {
+int run_cli(std::span<const std::string_view> arguments, std::ostream& output, std::ostream& errors,
+            const StopRequest& stop) {
     if (arguments.size() == 1 && arguments.front() == "--help") {
         output << HELP_TEXT;
         return 0;
@@ -345,6 +393,8 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
 
     std::string_view mode;
     std::string_view input;
+    std::string_view interface;
+    std::optional<std::uint64_t> packet_limit;
     FlowTableConfig config;
     TcpReassemblyConfig tcp_config;
     RuleEngineConfig rule_config;
@@ -365,6 +415,11 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
             mode = value;
         } else if (option == "--input" && input.empty()) {
             input = value;
+        } else if (option == "--interface" && interface.empty()) {
+            interface = value;
+        } else if (option == "--packet-count" && !packet_limit) {
+            packet_limit = positive_integer(value);
+            if (!packet_limit) return usage_error(errors);
         } else if (option == "--max-flows" && !max_flows_seen) {
             const auto number = positive_integer(value);
             if (!number || *number > std::numeric_limits<std::size_t>::max()) {
@@ -411,13 +466,17 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output,
             return usage_error(errors);
         }
     }
-    if (mode != "pcap" || input.empty() || (rule_state_seen && rule_path.empty())) {
+    if ((mode != "pcap" && mode != "live") || (rule_state_seen && rule_path.empty()) ||
+        (mode == "pcap" && (input.empty() || !interface.empty() || packet_limit)) ||
+        (mode == "live" && (interface.empty() || !input.empty()))) {
         return usage_error(errors);
     }
     tcp_config.max_flows = config.max_entries;
     rule_config.max_flows = config.max_entries;
-    return analyze_pcap(std::string{input}, config, tcp_config, std::string{rule_path}, rule_config,
-                        std::string{log_path}, output, errors);
+    return analyze_capture(std::string{mode == "pcap" ? input : interface}, config, tcp_config,
+                           std::string{rule_path}, rule_config, std::string{log_path}, output,
+                           errors, mode == "pcap" ? CaptureMode::Pcap : CaptureMode::Live,
+                           packet_limit, stop);
 }
 
 }  // namespace miniips

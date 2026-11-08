@@ -2,11 +2,39 @@
 
 C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드는 교육·연구용 프로젝트다. Suricata에서 영감을 얻은 독립 구현이다.
 
-**현재 상태(2026-11-08): A0~A5 검증 완료.** 파싱 → Flow → TCP → 룰 → JSONL을 공통 Engine에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일한225개가 각각 통과했고 실패·skip0, 포맷 검사도 통과했다. 독립 리뷰 중요1건(SIGXFSZ)을 실제 회귀로 수정했고 경미3건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A5 실행 증거](docs/a5-validation-2026-11-08.json)를 참고한다. IPS 전체 완성과 사용자 자체 테스트는 앞으로의 단계다.
+**현재 상태(2026-11-08): A0~A6 검증 완료.** 명시한 Linux 인터페이스의 라이브 수집을 공통 Engine·JSONL에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 각각238/238, 실패·skip0과 포맷 검사를 통과했고 각 빌드의 격리망 실제11시나리오도 통과했다. 독립 리뷰 중요1건(최적화된 Python의 검증기 격리 검사 우회)을 안전한 회귀로 수정했고 경미3건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A6 실행 증거](docs/a6-validation-2026-11-08.json)를 참고한다. 실제 IPS 차단·사용자 자체 테스트·AI는 이후 단계다.
 
 앞서 발생했던 WSL 설치 오류와 도구 부재는 [환경 복구 전 기록](docs/a0-validation-2026-11-05.json)에, 복구 후 실제 명령과 결과는 [Linux 실행 기록](docs/a0-validation-2026-11-05-linux.json)에 보관한다.
 
 작업 규칙은 [AGENTS.md](AGENTS.md), 기능 계약은 [PROJECT_SPEC.md](PROJECT_SPEC.md), 개발 단계는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 코드 규칙은 [CODING_STYLE.md](CODING_STYLE.md)를 따른다.
+
+## A6 라이브 IDS — 2026-11-08
+
+명시한 Linux Ethernet 인터페이스를 libpcap으로 수집해 기존 Engine과 JSONL에 전달한다. 세 빌드의238개와 실제11시나리오를 모두 확인한 [A6 실행 증거](docs/a6-validation-2026-11-08.json)에 완료 판정을 기록했다. promiscuous 모드는 켜지 않고 실제 트래픽을 차단하지 않는다.
+
+```bash
+# 실제 인터페이스 이름으로 지정; 캡처에는 Linux 권한이 필요하다.
+sudo ./build/miniips --mode live --interface eth0 --rules rules/example.json --log live-events.jsonl
+# Ctrl+C로 정상 정리. JSONL만 stdout으로 출력하려면:
+sudo ./build/miniips --mode live --interface eth0 --log -
+# 수집 프레임10개 처리 후 정상 종료; 파싱 실패 프레임도 포함한다.
+sudo ./build/miniips --mode live --interface eth0 --packet-count 10 --log -
+```
+
+- `--mode live --interface NAME`이 필수다. live의 --input과 pcap의 --interface/--packet-count는 사용법 오류다. packet-count는 생략하면 정지 요청까지 수집하며 양의 uint64만 허용한다.
+- Ctrl+C(SIGINT)/SIGTERM과 packet-count는 정상 정지다. flow reason=stopped이며 live stats의 run_complete=true, capture_complete=false다. EOF는 PCAP 파일에만 해당한다. 성공 코드0도 전체 네트워크를 빠짐없이 검사했다는 뜻은 아니다.
+- 라이브 JSONL은 mode=live/enforced=false다. ps_recv/ps_drop/ps_ifdrop은 libpcap 원시 수신/캡처 유실 통계이며 룰의 simulated_drop_packets와 별개다. ps_ifdrop0은 미지원일 수도 있다. stats unavailable은 null로 표시하며 마지막 logger_summary와 종료 코드를 함께 확인한다.
+- 로그 장애는 즉시 한 번 알리고 정지 요청/packet-count까지 판정을 계속한 뒤 코드1을 반환한다. 파일 덮어쓰기 보호·부분 로그 보존·최종 flush/close 확인은 A5와 같다. 동기 출력 지연 상한을 보장하지 않는다.
+- 첫 버전은 DLT_EN10MB만 지원한다. any/cooked 입력은 거부한다. 무입력 Flow는 마지막 실제 캡처 시각을 기준으로 유지하고 다음 패킷/정지에서 정리한다. libpcap 최소 버전은1.9.0이며 이전 환경은 업그레이드가 필요하다.
+
+실제 통합 검사는 호스트와 다른 임시 네트워크 namespace임을 먼저 확인한 뒤 그 안에서 만든 veth 쌍에만 합성 프레임을 보낸다. 다음 명령은 root 또는 필요한 namespace/캡처 권한이 있는 Linux에서 실행한다. 호스트 방화벽을 변경하지 않는다.
+
+```bash
+export MINIIPS_A6_HOST_NETNS=$(readlink /proc/self/ns/net)
+unshare --net -- python3 tests/check_live_process.py build/miniips build/tests/fixtures rules/a5-demo.json
+```
+
+이 검사는 기본 CTest와 분리돼 있다. 권한 부족이나 watchdog 실패를 테스트 성공으로 처리하지 않는다. IPS A0~A8 이후 사용자 자체 테스트·AI 착수 지시 조건을 유지한다.
 
 ## A5 JSONL 로그와 파이프라인 — 2026-11-08
 
@@ -61,9 +89,10 @@ JSON 룰 로더와 KMP 기반 packet/stream 룰 엔진을 구현했다. 중요 �
 - 방향별 TCP 순서 복원·중복 제거·first-seen 겹침 처리·불완전 사유와 버퍼/깊이 제한. EOF·유휴 만료·RST 정리.
 - JSON 전체 검증·KMP 검색·우선순위 alert/pass/drop·재전송 이벤트 억제와 제한된 상태 정리.
 - JSONL 이벤트7종, 새 파일/표준 출력, 실패 고정·미기록 집계·최종 flush/close 결과 반영과 sink 없는 공통 Engine.
-- 기존184개와 신규41개, 총225개를 Debug·Release/clang-tidy·ASan/UBSan에서 각각 실행해 모두 통과했다.
+- 비차단 라이브 수집·SIGINT/SIGTERM 정지·원시 캡처 수신/유실 통계·packet-count와 PCAP 공통 처리.
+- 일반 CTest238개와 별도 격리망 실제11시나리오를 Debug·Release/clang-tidy·ASan/UBSan에서 각각 통과했다.
 
-라이브 수집·실제 차단·AI·IPC는 후속 단계다.
+실제 차단·AI·IPC는 후속 단계다.
 
 ## Linux 개발 의존성
 
@@ -116,7 +145,7 @@ pcap_summary packets=2 parsed=2 skipped=0
 ./build/miniips --mode pcap --input /path/to/capture.pcap
 ```
 
-옵션 순서는 바꿀 수 있다. `--mode`와 `--input`은 한 번씩 필요하며, `--rules`, `--log`, live/inline 모드는 아직 지원하지 않는다.
+옵션 순서는 바꿀 수 있다. PCAP에는 `--mode pcap --input PATH`, live에는 `--mode live --interface NAME`이 필요하다. --rules/--log는 선택 옵션이며 실제 inline 모드는 후속 단계다.
 
 | 종료 코드 | 의미 |
 | --- | --- |

@@ -1,5 +1,18 @@
 # 테스트 계획과 실제 검증
 
+## A6 최종 판정 — 2026-11-08
+
+**완료.** [A6 설계](superpowers/specs/2026-11-08-a6-design.md)와 [계획](superpowers/plans/2026-11-08-a6.md)에 따라 실제 live source를 기존 Engine에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan은 동일238개 각각 전부 통과했고 실패·disabled·skip0, 포맷 검사도 통과했다. 각 빌드의 별도 격리망 실제11시나리오도 통과했다. [A6 실행 증거](a6-validation-2026-11-08.json)에 JUnit·명령·해시·실제 JSONL과 리뷰 수정 내역을 기록한다.
+
+- 기존225개 + 신규13개 = 일반 CTest238개: source 구성/없는 장치3, live metadata/Stopped/7종모드/원시 통계/null5, CLI 옵션/실패 우선순위4, 검증기 안전 검사1(내부4시나리오).
+- 초기 새 API/소스 헤더 부재는 컴파일 RED이며 런타임 성공으로 세지 않는다. 기존 live CLI의 잘못된 사용법 종료2를 기록했다. Stopped가 Publisher에서 aborted로 기록되는 문제는 실제 assertion RED 후 고쳤다.
+- 명시적 권한 검사 `check_live_process.py`는 기본 CTest와 별도다. 임시 netns/veth에서 전체10프레임, idle SIGINT/SIGTERM, active SIGINT, 닫힌 stdout, 파일 크기 제한 stdout/파일, 새 파일600/기존 보존, 없는 장치/any 거부, 권한 없는 캡처의11시나리오를 검사한다. 모든 기본값은 외부 통신과 호스트 방화벽 변경을 하지 않는다.
+- Debug에서237/237과 실제11/11을 먼저 확인했다. 안전 회귀1개를 더한 최종238개를 세 구성에 실행했다. 관측 처리10/parsed9/skipped1, 신규 탐지2/시뮬레이션 Drop3/실제 Drop0을 확인했고 소유 버퍼·룰 배열을 정리했다. 실제 live JSONL 표본은24줄이며 stop_reason=packet_limit, run_complete=true/capture_complete=false와 capture_stats=available을 확인했다.
+
+최종 독립 리뷰는 Critical0/Important1/Minor3이다. 검증기의 assert 격리 검사와 결과 검사가 Python 최적화에서 사라지는 Important를 안전한 가짜 ip 기록기로 RED 재현했다. 실제 호스트 네트워크 명령은 실행하지 않았다. -O/PYTHONOPTIMIZE를 명시적으로 거부하고 namespace를 if/raise로 확인해4시나리오 GREEN, 기본 CTest live.guard를 추가했다. 선호 리뷰 모델의 사용량 제한으로 최초 리뷰는 미실행됐고, 사용 가능한 새 검토자의 완료 리뷰1회만 결과로 기록한다. 경미3건은 한계 문서에 보류하며 재리뷰는 하지 않는다.
+
+A5 소스61개 중48개는 해시가 같고13개는 계획된 연결 변경이다. 신규8개를 포함한69개 소스/테스트 해시와 문서·fixture·바이너리·실행 증거를 기록했다. strict tidy의 pimpl optional 접근은 불변 지역 복사로 검사할 수 있게 고쳤으며 검사를 끄지 않았다. 실제 지속 부하 중 신호 종료/처리량·지연, 강제 캡처 유실, stats 미지원 장치·장치 제거·메모리 부족·close 장애, 원격 CI, NFQUEUE/실제 차단/AI는 미실행이다. 자동 commit/push 없이 현재 폴더에 보관하며 A7은 다음 지시 이후 진행한다.
+
 ## A5 최종 판정 — 2026-11-08
 
 **완료.** [승인 설계](superpowers/specs/2026-11-07-a5-design.md)에 따라 Engine → EventPublisher → EventLogger를 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan은 같은225개 각각 전부 통과했고 실패·disabled·skip0, 포맷 검사도 통과했다. 독립 리뷰 중요1건(SIGXFSZ)을 실제 RED→GREEN으로 수정했으며 경미3건은 [한계](known-limitations.md)에 보류했다. [A5 실행 증거](a5-validation-2026-11-08.json)에 JUnit·명령·해시·실제 출력·리뷰를 기록한다. 아래 A4 이하는 당시 결과이며 현재 A5 기능 부재를 뜻하지 않는다.

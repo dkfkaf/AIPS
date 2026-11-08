@@ -31,7 +31,7 @@ struct StreamSummary {
     bool fin_seen{}, closed{};
     std::optional<ReassemblyEnd> end;
 };
-enum class FlowEndReason : std::uint8_t { Expired, Eof, Aborted };
+enum class FlowEndReason : std::uint8_t { Expired, Eof, Aborted, Stopped };
 struct FlowEnd {
     FlowSnapshot flow;
     FlowEndReason reason{FlowEndReason::Eof};
@@ -57,7 +57,7 @@ struct PacketResult {
     std::optional<ProcessingError> processing_error;
     std::vector<FlowEnd> expired;
 };
-enum class EngineEnd : std::uint8_t { Eof, Aborted };
+enum class EngineEnd : std::uint8_t { Eof, Aborted, Stopped };
 struct EngineStats {
     std::uint64_t packets{}, parsed{}, skipped{}, processing_errors{};
     std::uint64_t detections{}, incomplete_directions{};

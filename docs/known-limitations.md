@@ -1,5 +1,24 @@
 # 알려진 한계
 
+## A6 적용 한계 — 2026-11-08
+
+- Linux Ethernet/DLT_EN10MB 수동 IDS다. 모든 룰 Drop은 시뮬레이션이고 실제 네트워크 차단은0이다. NFQUEUE/A7·AI는 구현하지 않았다. 기존 IPv6/fragment/VLAN·TCP 제한도 유지한다.
+- 인터페이스를 명시해야 하며 raw 캡처 권한이 필요하다. promiscuous off로 선택 인터페이스에서 보이는 프레임만 분석한다. any/cooked와 selectable fd가 없는 장치는 거부한다. libpcap<1.9.0은 이제 빌드 대상이 아니다.
+- 무입력 정지 확인 대기는 최대100ms지만 동기 I/O·현재 처리·종료 정리 전체의 시간 상한은 아니다. 출력 소비자가 멈춰 write가 막히면 Ctrl+C 뒤 종료도 지연될 수 있다. fsync 내구성·치명적 OOM 정리를 보장하지 않는다.
+- logger 실패 후에도 요청 정지/packet-count까지 탐지를 계속하지만 기록되지 않은 결과가 생긴다. 즉시 log_error와 최종 log_complete/종료 코드를 확인해야 한다. human 출력 실패는 수집 자체를 중단할 수 있다.
+- capture_complete는 EOF 지표라 live에서는false다. run_complete=true도 정해진 관측 창의 정상 정지일 뿐 네트워크 전체 검사 완료가 아니다. 정상 stop 뒤 버퍼에 남은 미전달 패킷을 완전히 drain한다고 주장하지 않는다.
+- capture ps_recv와 실제 처리 수는 다를 수 있다. ps_drop은 캡처 버퍼 유실이며 룰 Drop과 합치지 않는다. ps_ifdrop0은 미지원일 수 있다. 네이티브 폭 원시 카운터의 장기 wrap을 보정하지 않는다. API 미지원이면 null/unavailable이다.
+- 유휴 Flow 만료는 실제 캡처 watermark 기준이다. 무입력 시간 동안 정기 벽시계 만료나 주기 통계를 추가하지 않았다. 다음 패킷 또는 정지에서 정리한다.
+- 라이브러리를 임베딩하면 호출자가 정지 요청과 신호 정책을 제공해야 한다. standalone main의 신호 처리 복구와 실제 프로세스 검사는 별개다. SIGINT/SIGTERM 정지 시 해당 캡처 창은 한 번만 마무리한다.
+- 실제 캡처 유실을 강제로 유발하는 부하/성능 실험, 실제 미지원 stats 장치·장치 제거·메모리 부족·close 실패 주입은 미실행이다. 권한 있는 통합은 별도 임시 namespace/veth에서 검사하고 호스트 방화벽을 변경하지 않는다.
+- A5 경미 보류3건과 아래 이전 단계 한계는 계속 적용한다.
+
+### A6 독립 리뷰 경미 보류3건
+
+1. JSON stats는 최종 human 요약/flush보다 먼저 발행된다. 그 뒤 human 출력이 실패하면 run_complete=true가 남아도 종료 코드는1이다. 생성 시점의 처리 종료 상태로 읽고 최종 출력 성공은 종료 코드로 확인해야 한다.
+2. human capture_summary는 status=unavailable일 때도 원시 필드를0으로 표시한다. 실제0으로 해석하지 말고 status를 먼저 확인한다. JSONL은 이때 null이며 오류 이유를 함께 기록한다.
+3. active SIGINT 실험은10프레임 burst 후 정지이며 지속 송신 부하 중 정지의 회귀를 보장하지 않는다. 구현은 매 패킷 요청을 확인하지만 지속 부하/처리량 검증은 미실행이다.
+
 ## A5 적용 한계 — 2026-11-08
 
 - 오프라인 PCAP의 JSONL 통합이다. 모든 drop은 시뮬레이션(enforced=false), actual_drop_packets=0이다. live/Inline/AI/IPC와 실제 차단 성능은 구현·검증하지 않았다. A0~A8 이후 사용자 자체 테스트와 AI 착수 지시를 기다린다.

@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "miniips/capture_source.hpp"
 #include "miniips/flow.hpp"
 
 namespace miniips {
@@ -25,6 +26,7 @@ std::string_view event_type_name(EventType type) noexcept;
 std::string_view event_action_name(EventAction action) noexcept;
 
 struct EventContext {
+    CaptureMode mode{CaptureMode::Pcap};
     std::optional<std::chrono::microseconds> captured_at;
     std::optional<std::uint64_t> packet_number;
     std::optional<std::uint64_t> flow_id;

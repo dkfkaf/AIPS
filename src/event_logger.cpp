@@ -49,8 +49,8 @@ Json document(const Event& event, std::uint64_t id) {
     const auto type = event_type_name(event.type);
     const auto action = event_action_name(event.action);
     const auto& context = event.context;
-    if (type == "unknown" || action == "unknown" || !event.fields.is_object() ||
-        (context.packet_number && *context.packet_number == 0) ||
+    if (type == "unknown" || action == "unknown" || capture_mode_name(context.mode) == "unknown" ||
+        !event.fields.is_object() || (context.packet_number && *context.packet_number == 0) ||
         (context.flow_id && *context.flow_id == 0) || (event.sid && *event.sid == 0)) {
         throw std::invalid_argument("Invalid event metadata.");
     }
@@ -69,7 +69,7 @@ Json document(const Event& event, std::uint64_t id) {
         {"dst_port", nullptr},
         {"protocol", nullptr},
         {"direction", nullptr},
-        {"mode", "pcap"},
+        {"mode", capture_mode_name(context.mode)},
         {"enforced", false},
         {"action", action},
         {"sid", event.sid ? Json(*event.sid) : Json(nullptr)},

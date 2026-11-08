@@ -1,0 +1,661 @@
+{
+  "date": "2026-11-08",
+  "timezone": "Asia/Seoul",
+  "stage": "A6",
+  "result": "complete_with_documented_minors",
+  "workspace": "C:/Users/purt1/OneDrive/Desktop/AIPS",
+  "baseline": {
+    "head": "20be9aa51a16081e77bd6180a76412fe1ff134d8",
+    "previous_stage": "A5",
+    "tests": 225,
+    "source_files_checked": 61,
+    "unchanged": 48,
+    "planned_changes": [
+      "CMakeLists.txt",
+      "include/miniips/capture_source.hpp",
+      "include/miniips/cli.hpp",
+      "include/miniips/engine.hpp",
+      "include/miniips/event.hpp",
+      "include/miniips/event_publisher.hpp",
+      "src/cli.cpp",
+      "src/engine.cpp",
+      "src/event_logger.cpp",
+      "src/event_publisher.cpp",
+      "src/main.cpp",
+      "src/pcap_source.cpp",
+      "tests/CMakeLists.txt"
+    ],
+    "unexpected_changes": 0,
+    "automatic_commit_push": false
+  },
+  "design": "docs/superpowers/specs/2026-11-08-a6-design.md",
+  "plan": "docs/superpowers/plans/2026-11-08-a6.md",
+  "profiles": [
+    {
+      "profile": "debug",
+      "tests": 238,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "live_cases": 11,
+      "junit": "build-a6-work/debug-tests.xml",
+      "build_log": "build-a6-work/debug-build.log",
+      "test_log": "build-a6-work/debug-tests.log",
+      "live_log": "build-a6-work/live-debug.log"
+    },
+    {
+      "profile": "release",
+      "tests": 238,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "live_cases": 11,
+      "junit": "build-a6-work/release-tests.xml",
+      "build_log": "build-a6-work/release-build.log",
+      "test_log": "build-a6-work/release-tests.log",
+      "live_log": "build-a6-work/live-release.log"
+    },
+    {
+      "profile": "sanitize",
+      "tests": 238,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "live_cases": 11,
+      "junit": "build-a6-work/sanitize-tests.xml",
+      "build_log": "build-a6-work/sanitize-build.log",
+      "test_log": "build-a6-work/sanitize-tests.log",
+      "live_log": "build-a6-work/live-sanitize.log"
+    }
+  ],
+  "same_tests_all_profiles": true,
+  "groups": {
+    "previous": 225,
+    "live_source": 3,
+    "live_metadata": 5,
+    "live_cli": 4,
+    "live_guard": 1
+  },
+  "format": {
+    "result": "passed",
+    "log": "build-a6-work/format.log"
+  },
+  "isolated_live": {
+    "host_namespace_mutated": false,
+    "host_firewall_changed": false,
+    "cases_each_profile": 11,
+    "frames_processed": 10,
+    "parsed": 9,
+    "skipped": 1,
+    "detections": 2,
+    "simulated_drop_packets": 3,
+    "actual_drop_packets": 0,
+    "trace_rows": 24,
+    "trace": "build-a6-work/live-sample.jsonl",
+    "ready_and_idle_signals": true,
+    "active_signal_after_burst": true,
+    "sustained_load_signal_regression": false
+  },
+  "review": {
+    "completed_reviews": 1,
+    "preferred_attempt_failed_usage_limit": true,
+    "critical": 0,
+    "important": 1,
+    "important_fixed": 1,
+    "fix_passes": 1,
+    "rereviews": 0,
+    "record": "build-a6-work/final-review.md",
+    "resolution": "build-a6-work/review-resolution.md",
+    "minor_deferred": [
+      "final human output failure after run_complete emission",
+      "unavailable human counters show zero with status",
+      "active SIGINT test follows burst rather than sustained load"
+    ]
+  },
+  "red_green": {
+    "api_compile_red": "build-a6-work/task1-red.log",
+    "stopped_runtime_red": "build-a6-work/task1-flow-red.log",
+    "source_compile_red": "build-a6-work/source-red.log",
+    "old_live_cli_exit2": "build-a6-work/cli-red.log",
+    "guard_runtime_red": "build-a6-work/review-guard-red.log",
+    "guard_green": "build-a6-work/review-guard-green.log",
+    "guard_cases": 4,
+    "guard_real_network_commands": 0
+  },
+  "commands": [
+    "cmake --build build --parallel 2; cmake --build build --target format-check",
+    "cmake --build build-release --parallel 3 (Release, strict clang-tidy)",
+    "cmake --build build-sanitize --parallel 1 (ASan/UBSan)",
+    "ctest --test-dir <build> --output-on-failure --no-tests=error --output-junit ../build-a6-work/<profile>-tests.xml",
+    "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 for sanitize tests and child processes",
+    "export MINIIPS_A6_HOST_NETNS=$(readlink /proc/self/ns/net); unshare --net -- python3 tests/check_live_process.py <build>/miniips <build>/tests/fixtures rules/a5-demo.json",
+    "python3 tests/check_live_guard.py tests/check_live_process.py"
+  ],
+  "not_run": [
+    "sustained-load SIGINT regression and throughput/latency benchmark",
+    "forced capture-buffer loss",
+    "actual unsupported-statistics device/device removal",
+    "real bad_alloc/close injection",
+    "remote CI",
+    "NFQUEUE/actual block/AI"
+  ],
+  "user_checkpoint": {
+    "order": "IPS A0-A8 -> user self-tests -> explicit AI direction",
+    "a7_started": false,
+    "ai_started": false
+  },
+  "source_hashes": [
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "7fb777e915e83484b2576a4f145d1863af504c4aceb378cf4eec0cb8b376bfaa"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "c55596c8ed798c8dcf749b7816706198db6f87fffbc0ee8d9ab77f2f53135c0e"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "3428abccb70dca1e567d828468c5a38b8adc336ad2ff651f18303625405381c0"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "c14ad164e36711a01057b80822e1fc4c6f5ca6073a0402467ff5b4099a8131e7"
+    },
+    {
+      "path": "include/miniips/detection_decision.hpp",
+      "sha256": "6595dfac10fd1632d1dc02c2c0940e2607b9222dd7a0bb805e0958cdcc23c116"
+    },
+    {
+      "path": "include/miniips/engine.hpp",
+      "sha256": "855249b19a1cc18705ad0af775e1535757bf5fa6cbba86f5e431da0c567dd8b2"
+    },
+    {
+      "path": "include/miniips/event.hpp",
+      "sha256": "8c5c832336d9ac56c256a0f5ecb507f140c6d45cb36bb207031764c934019ac9"
+    },
+    {
+      "path": "include/miniips/event_logger.hpp",
+      "sha256": "ef02c23e47cfd20d95ee3fb5cbe63ab7a8f32e2e5609d9c9d6769538acbeb383"
+    },
+    {
+      "path": "include/miniips/event_publisher.hpp",
+      "sha256": "e7f70cde4e78309ec8ce81879673de9601eeba841544ce035cc94e237ed60e55"
+    },
+    {
+      "path": "include/miniips/flow.hpp",
+      "sha256": "32cba00047ae0084ddc5d0e039539715cdb247020f1e269c6baf40a5460e6eee"
+    },
+    {
+      "path": "include/miniips/flow_table.hpp",
+      "sha256": "b6c215fb6e112265ae7b86cc646852d2407578b6770ccb67efcfd60df89fa5a5"
+    },
+    {
+      "path": "include/miniips/live_pcap_source.hpp",
+      "sha256": "5677521379952beaa756d00e7e45c60e53731d0e82f4504e27b09104a9a03a9a"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "e980c631c3cd7eb742f1d66505602025aa76fd9c69c7825dc8d4088a1724584f"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/rule.hpp",
+      "sha256": "a41757ebed161ee5226df6c7d9915b0227649cf12615f43bddb0554d794db44f"
+    },
+    {
+      "path": "include/miniips/rule_engine.hpp",
+      "sha256": "e3f861dd1e1c2a782f566f1534501b0dd74a1f4942a53ed8e69a031291663070"
+    },
+    {
+      "path": "include/miniips/rule_loader.hpp",
+      "sha256": "ed7a1e30b5efd221554d87bccf4034ee8e5ba10895a150b2add8973b750b76b9"
+    },
+    {
+      "path": "include/miniips/tcp_reassembler.hpp",
+      "sha256": "c8abdeb6cfdd3f782c07c80ed59ffb6399348f862330cc59944d9a6863ddafe6"
+    },
+    {
+      "path": "rules/a5-demo.json",
+      "sha256": "01b17ceddd5b80a58677d93de1a34e719b06b6355b7afb8a6bb031841fe70e5f"
+    },
+    {
+      "path": "rules/example.json",
+      "sha256": "6dfefc84cbf8bb0acb69ea7feb8f17a749e8435d3c81798ab741b5887a32b5ba"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "ad6aca4076ebf0ea557fc827e37c111cc5b4168ecdf1255a873f83eaf03e93ed"
+    },
+    {
+      "path": "src/engine.cpp",
+      "sha256": "ef3807fc58c6f14020fb85ce9759d92be7414859c9bf64466a5697b8e25109d8"
+    },
+    {
+      "path": "src/event_logger.cpp",
+      "sha256": "ec86eeaf1b21051cd6de7d2c70d06f6c819737a81dde99f37dcbe6ab97f04005"
+    },
+    {
+      "path": "src/event_publisher.cpp",
+      "sha256": "d0aabe63b64eb89c1605052cd13342de40d4d0700b8ab2529d4ad0922b081582"
+    },
+    {
+      "path": "src/flow_table.cpp",
+      "sha256": "734a4bfaea8d425f733ff146ecf127c564fda68e96ef5c03144efacb8f54a1d4"
+    },
+    {
+      "path": "src/live_pcap_source.cpp",
+      "sha256": "8e61828e4f546fcd62c26fcc6dac492384c2a6f0314567fc4c00b7b98c165702"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "e7e94766122e91c40eb5dd57d98e34f74923db65fa12462624d304e0d02216a4"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "87ac88a3c419f4b6518cd6883e85eb5d6f610fe62c65ed4534668077a918ee5a"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "d62f59da1f109f02eca76f53a3eb25512722096ecd61629bf342b87644ece4ad"
+    },
+    {
+      "path": "src/pcap_timestamp.hpp",
+      "sha256": "4be8b1d4f4a329f98726375027fa15ef2f8310a52dbb7948c38413bc0c32bafe"
+    },
+    {
+      "path": "src/rule_engine.cpp",
+      "sha256": "6cc4b41fab6dce89cbfd30002b2f54f64f289d732d4627b65f277a2cd6ae4865"
+    },
+    {
+      "path": "src/rule_loader.cpp",
+      "sha256": "e4c63f1ced30bcf2ce3649cd83a7119dabc0828ae2bb57c9f4d285f33f024d34"
+    },
+    {
+      "path": "src/tcp_reassembler.cpp",
+      "sha256": "5e55c31b559116982d7d129ce4b852e4036898e0d82be459a96ea8bead85e72b"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "641a8c9cb5b38cc707b60722961040172e88b843ae18393b695e6b9675777b02"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "tests/check_flow_cli.cmake",
+      "sha256": "2e1da62f99f74c18cbd6247075cce0901a16dd64869d762f10bb8ac244a1cfb7"
+    },
+    {
+      "path": "tests/check_jsonl_process.py",
+      "sha256": "04f42e3b1def81c4b17d9d2425689cbae24e37a45c2f78922adeee1c4a50370c"
+    },
+    {
+      "path": "tests/check_live_guard.py",
+      "sha256": "ab77f5cefdc74572bc9fcf9850c2581eb39595d9df900afcb4f6ad32c7c7409a"
+    },
+    {
+      "path": "tests/check_live_process.py",
+      "sha256": "a03ac3bf31d17f77a6692e6a42748d791582cb1f9b6d41d3fd62ee4a43a65b3e"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "861bad0dbb6e38769869933936f37fce871aefcb2b4c7e982f2ab62e7eb0e7fb"
+    },
+    {
+      "path": "tests/fixtures/flow_fixtures.hpp",
+      "sha256": "4c34476496a43be5a45f29c6fdd8bdf0651f055e8cfbd49d066711f33d7fdf73"
+    },
+    {
+      "path": "tests/fixtures/jsonl_fixtures.hpp",
+      "sha256": "e7164ab1639dfb040a376beff7c2b148caf60d9150e497767af9b210775fa74e"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    },
+    {
+      "path": "tests/fixtures/reassembly_fixtures.hpp",
+      "sha256": "fd3899ffef525011b2318bec5b4267a7dba3d89428822e9c5eb27745420b0705"
+    },
+    {
+      "path": "tests/fixtures/rule_fixtures.hpp",
+      "sha256": "e7552a454ac5ea5cf58cdebbca1d45093847a3e348bc76cc03114f0e67974336"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/test_cli_flow.cpp",
+      "sha256": "96fb66270438af796b1db32c64e3f9f9f03dd58e7910eefda8fbd6ac58370386"
+    },
+    {
+      "path": "tests/test_cli_jsonl.cpp",
+      "sha256": "01f3e525cdd8e69b93c51a3867fdab334bb0dc7f97662d8244701ff383a7643f"
+    },
+    {
+      "path": "tests/test_cli_live.cpp",
+      "sha256": "92fd712c3d012f777a744119d29f40d25b32105e6b2c7a3d89f2dec999278bf4"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli_reassembly.cpp",
+      "sha256": "19dd1e6eba36c08abefec685fcfdd3239f6d6e630ca3b3e8a723ecb4458dde38"
+    },
+    {
+      "path": "tests/test_cli_rules.cpp",
+      "sha256": "f0a5e3bcfa031e7a7ffb084092a0ca635bbe0d61abed2bc253a68e5a08b8f4a8"
+    },
+    {
+      "path": "tests/test_engine.cpp",
+      "sha256": "f088182a3d979d77f28a455831ea47731a2890aadb7726574587e4fad80126a1"
+    },
+    {
+      "path": "tests/test_event_logger.cpp",
+      "sha256": "1c0b7f4f2fd6c4198101a2d353438f6e29ae2088942b28aeef53e373611e180c"
+    },
+    {
+      "path": "tests/test_event_publisher.cpp",
+      "sha256": "2b271c902e388769104d46db8bea7a76d9f55b40a3de83ddc619c8d7a52aee68"
+    },
+    {
+      "path": "tests/test_flow_table.cpp",
+      "sha256": "3f30fea713c3328be6d8206b1c047e304ef0a03aacaaaaaa0376c8ad69b4bb00"
+    },
+    {
+      "path": "tests/test_live_metadata.cpp",
+      "sha256": "ab86c7a5956d253ae70065127004fc40e4282ee66c8eb713b9e5d717cabacab0"
+    },
+    {
+      "path": "tests/test_live_source.cpp",
+      "sha256": "f53a4c71ff1c03edaaa5bd7a56d3b1577969c8b05e83a767476912e4f793709c"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_reassembly_lifecycle.cpp",
+      "sha256": "26930f1b51d9a54e43741908cd68bffa4b77d976053155be6eb4b2f92c61032e"
+    },
+    {
+      "path": "tests/test_reassembly_ranges.cpp",
+      "sha256": "30a707bb09b2caed4d9a9b0541c218b4b6cd862f08881ec1920f3f8b93953b9a"
+    },
+    {
+      "path": "tests/test_rule_engine.cpp",
+      "sha256": "1f2c786d1310945dc13dba0aa10aa100ca35434f1a02af7d0841fda51ae5291e"
+    },
+    {
+      "path": "tests/test_rule_loader.cpp",
+      "sha256": "b5e24f69adb85c07620b7b1f0288315105a97478f8e0aa1143b4916f5d162008"
+    },
+    {
+      "path": "tests/test_tcp_reassembler.cpp",
+      "sha256": "660e61176938e1bc6b45e65b5fdaf1380d49e6257b9170b9a1be447dbfc98e02"
+    }
+  ],
+  "document_hashes": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "7e4a13b55e78b2cfca9872bc8f4cac04d475dd84d3746fccc4dd81d21c00d5c2"
+    },
+    {
+      "path": "PROJECT_SPEC.md",
+      "sha256": "7874dc1ef664492c2de169efe7d8b2c769dad0e66ed24e3ba375cc01286ae6bf"
+    },
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "sha256": "c8bbbf7c3c9f56b3260c11d563ddcdaa7ba5da30e42e36c381015ccb3daa654e"
+    },
+    {
+      "path": "README.md",
+      "sha256": "52b38e0bfb9141cb74c170b6f9c6bc333731f8e3f3edfc818c15b7b285db5b96"
+    },
+    {
+      "path": "docs/design-decisions.md",
+      "sha256": "f78a98a96f41998b5bfdd424b41b3c0b7d469c0f017d88dd5ba8466f0dc68840"
+    },
+    {
+      "path": "docs/known-limitations.md",
+      "sha256": "742634c2c829a9e99e8ef119d46559e8f439e54a4cb90828f672955d69ce3891"
+    },
+    {
+      "path": "docs/test-plan.md",
+      "sha256": "c2aad451a914d2568c777d2b1929a7941f3239ec839836a4672ce49b00e1a25b"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-08-a6-design.md",
+      "sha256": "bd0dd68ae3216c6574f99da5e5bc7a93a278e8adc8bb695d66c2fe3ff10b6da4"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-08-a6.md",
+      "sha256": "11a64a951f8bea31f5a110753314b44f2b6cb5365afabd0814550e4b0a3bc33b"
+    }
+  ],
+  "fixture_hashes": [
+    {
+      "path": "build/tests/fixtures/empty.pcap",
+      "sha256": "acc530668c8bc60b2d229281130b1899bfc81d70fdada5c34b3236c628f739c8"
+    },
+    {
+      "path": "build/tests/fixtures/flow_bidirectional.pcap",
+      "sha256": "f55bf13e76176202c9bd71595da317b47ba1b7eb18d4e9bef66f5b1b5f6dc8b2"
+    },
+    {
+      "path": "build/tests/fixtures/flow_capacity.pcap",
+      "sha256": "bd31c3be76eb94882749bd99460f999953fcd4446c8064a1294e68887343639e"
+    },
+    {
+      "path": "build/tests/fixtures/flow_expired.pcap",
+      "sha256": "63cd54ebdddded3e822e14e7f43be92c9c619282b58ffcc4ec88c05080911234"
+    },
+    {
+      "path": "build/tests/fixtures/jsonl_pipeline.pcap",
+      "sha256": "70caf5fb4683cb8c8247c39d15d93b30f002136528d259c514ee6fb7069f3a44"
+    },
+    {
+      "path": "build/tests/fixtures/mixed.pcap",
+      "sha256": "dfdc6592eb5ea6aa3e89e4250b855bd8153d3f2d2a9078d97d196b6d66c3eb71"
+    },
+    {
+      "path": "build/tests/fixtures/normal.pcap",
+      "sha256": "c031fb5b17e32a171a24fef041657905db9930dcfd64b93df413a385a4fe1f4c"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_ambiguous_fin.pcap",
+      "sha256": "4e02e3ae2a674cd8bff79e200fcc5df804fa6b7027ab2b473b54b6e039805ea1"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_gap.pcap",
+      "sha256": "9d7f5a79c38bafab14d3f09dfdfb12d45c73f30286756e9b03b741b9eaab04ac"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_hello.pcap",
+      "sha256": "e1a951a2434ac1e09e8535ca8aa5223424e0a00f116876bb9b208d3ee70452e1"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_reset.pcap",
+      "sha256": "b7b98ea38e6cdf1e3df4cd4e3cd025565f37c2bb8e2ce350af3aff9c328c8a4d"
+    },
+    {
+      "path": "build/tests/fixtures/rules_packet.pcap",
+      "sha256": "0c9cf5d1fbd3a2f177f8e2db6b05e889af59402c99654e354be9e0e13cc98387"
+    },
+    {
+      "path": "build/tests/fixtures/rules_retransmit.pcap",
+      "sha256": "51f1602411e06c5e9d522245c08cec33a9887b14986605458b9f1553f89f7cde"
+    },
+    {
+      "path": "build/tests/fixtures/truncated.pcap",
+      "sha256": "250082334453a2ba5a56176a5c997df32e78b1e7af38592a4cddf983082ed2d5"
+    },
+    {
+      "path": "build/tests/fixtures/unsupported.pcap",
+      "sha256": "305777c56a3a26485811dc4a97b478ff7fe6aa038179f3957953166876b06d37"
+    }
+  ],
+  "binary_hashes": [
+    {
+      "path": "build/miniips",
+      "sha256": "0ab42e97d5791e4f906361ba526263c3e0cfce2673e8c6968f08ae8a2e85727c"
+    },
+    {
+      "path": "build-release/miniips",
+      "sha256": "bc84f6c2c527afafe89e1fafd9c1dc65289b2cce0a0318e6ec2a5e7b59bd3733"
+    },
+    {
+      "path": "build-sanitize/miniips",
+      "sha256": "1088543de65bf9f1a96b03795f56a9eb1b88016cdc6127b2ed63a6b297bb6857"
+    }
+  ],
+  "evidence_hashes": [
+    {
+      "path": "build-a6-work/cli-red-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-a6-work/cli-red.log",
+      "sha256": "1d3b2f0db23ee32633df090d4ca5091138b32b0131e68e90a1120d3895958f55"
+    },
+    {
+      "path": "build-a6-work/debug-build.log",
+      "sha256": "51d5a44766fa1da72e5168c9c553e8d9f282290f968e41754139535d28764b5a"
+    },
+    {
+      "path": "build-a6-work/debug-tests.log",
+      "sha256": "cb6fd26e343002b91ce185980975b0c287299064387d251d4df4ecf633035bdd"
+    },
+    {
+      "path": "build-a6-work/debug-tests.xml",
+      "sha256": "9cbd1238f1d85d5993ab332cf83598eac04531d6a076cf7b0122a8b74073a57e"
+    },
+    {
+      "path": "build-a6-work/final-review.md",
+      "sha256": "1a819d7209401920f0ac54a62b792d4c551bf78267f55842e8e247a962ed482f"
+    },
+    {
+      "path": "build-a6-work/format.log",
+      "sha256": "2a2dfb33385f763495a7752721d7f4bcf54c5fe8cfbf144c88c3f1601c5a6653"
+    },
+    {
+      "path": "build-a6-work/live-debug.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a6-work/live-release.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a6-work/live-sample.jsonl",
+      "sha256": "9656054569af1f5b8d984b9e724d67e30b7f766101389aa443ab4513e85645bc"
+    },
+    {
+      "path": "build-a6-work/live-sanitize.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a6-work/progress.md",
+      "sha256": "3f63a19d678e4c6d5a8c09f37648ece300cc28e5081cb7fdcf92d19f725a7289"
+    },
+    {
+      "path": "build-a6-work/release-build.log",
+      "sha256": "ab4f8c5c0a8bdc54e117bbef13b39a5c9784939b40b45897e8370e034c2784f2"
+    },
+    {
+      "path": "build-a6-work/release-tests.log",
+      "sha256": "15a0fa9143fedf987fda37046153856a8e8db7964678ffe2c688583467d835a8"
+    },
+    {
+      "path": "build-a6-work/release-tests.xml",
+      "sha256": "9706c0649ed024fe13a3aacf920bae8e7f0eb18d11912cb2dc6feba91cbd02f3"
+    },
+    {
+      "path": "build-a6-work/release-tidy-red.log",
+      "sha256": "ed0a85e9c253cbad3ec64d610b29c2b7bac77a53a80377667a3204031f8ce908"
+    },
+    {
+      "path": "build-a6-work/review-guard-green.log",
+      "sha256": "245ccf101e795bd6c286ddeecc0948d8c66dc347bb81118d4e3d90e52bdba712"
+    },
+    {
+      "path": "build-a6-work/review-guard-red.log",
+      "sha256": "0e934008035e969328e7d4b8afe635cd068920ac5f7cd51dd0126e3b18525c34"
+    },
+    {
+      "path": "build-a6-work/review-resolution.md",
+      "sha256": "52ce4cb00ff4632578cb2a94a6d885547b189c341f3759fe1fc715dda24748fa"
+    },
+    {
+      "path": "build-a6-work/sanitize-build.log",
+      "sha256": "79e45f14fe0aa0a91cdacac3aa0e4d3b03806f99651ff4a1be98c7ce1f50b152"
+    },
+    {
+      "path": "build-a6-work/sanitize-tests.log",
+      "sha256": "0d87643f6fd3fa91e3592054757327b7297722e160d55345559c21cb70597c0a"
+    },
+    {
+      "path": "build-a6-work/sanitize-tests.xml",
+      "sha256": "85cef4fcf5e11d2c5cc82f4bc45a8943e07ce3bc3581d2ca2b51f08775880de8"
+    },
+    {
+      "path": "build-a6-work/source-red.log",
+      "sha256": "db781391056501a27154e95599e7f1ba384fb67a315e28af79dd1d3a2c387f9d"
+    },
+    {
+      "path": "build-a6-work/task1-build.log",
+      "sha256": "831e731e3b14edf172dc799614154162f4084ba369a9c65841dec281424d1e84"
+    },
+    {
+      "path": "build-a6-work/task1-flow-red-build.log",
+      "sha256": "0794cc1a3270d1a94dc38a030326856dc91a817a1a839daf9b7f0e200b625b5a"
+    },
+    {
+      "path": "build-a6-work/task1-flow-red.log",
+      "sha256": "7be6a0cf7c04168d3c3e5db0e3226987e29ba75cbc3d7638b2702dcbac9e84e5"
+    },
+    {
+      "path": "build-a6-work/task1-red.log",
+      "sha256": "00ee417dbff4206462c7ded33534c0816447afa6646f844a2b242d094e075372"
+    },
+    {
+      "path": "build-a6-work/task1-tests.log",
+      "sha256": "2d598cd748371d000dd3f493cc0d4f4d2e41a9d05ae3c8653be8f9667d0e5cf7"
+    },
+    {
+      "path": "build-a6-work/task2-build.log",
+      "sha256": "0c6e1962ccc7ee484e7f8a7f1c8ff51dee0bed3ac45b0f4727ebc86f644965f3"
+    },
+    {
+      "path": "build-a6-work/task2-tests.log",
+      "sha256": "18b3e4b6efcd7f042a5e17470d485e48ec469479d347974b1729120d45ddbd39"
+    }
+  ]
+}

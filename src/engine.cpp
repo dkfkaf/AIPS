@@ -130,7 +130,7 @@ PacketResult Engine::inspect(const PacketEnvelope& envelope) {
 }
 
 FinishResult Engine::finish(EngineEnd reason) {
-    if (reason != EngineEnd::Eof && reason != EngineEnd::Aborted) {
+    if (reason != EngineEnd::Eof && reason != EngineEnd::Aborted && reason != EngineEnd::Stopped) {
         throw std::invalid_argument("Unknown engine end reason.");
     }
     FinishResult result;
@@ -138,7 +138,9 @@ FinishResult Engine::finish(EngineEnd reason) {
         end_reason_ = processing_failed_ ? EngineEnd::Aborted : reason;
         flows_.visit([&](const FlowSnapshot& flow) {
             collect_end(flow,
-                        end_reason_ == EngineEnd::Eof ? FlowEndReason::Eof : FlowEndReason::Aborted,
+                        end_reason_ == EngineEnd::Eof       ? FlowEndReason::Eof
+                        : end_reason_ == EngineEnd::Stopped ? FlowEndReason::Stopped
+                                                            : FlowEndReason::Aborted,
                         result.flows);
         });
         if (detector_) {

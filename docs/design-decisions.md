@@ -1,5 +1,19 @@
 # 설계 결정
 
+## A6 라이브 IDS — 2026-11-08
+
+사용자의 A6 요청·중단 작업 재개 지시에 따라 [설계](superpowers/specs/2026-11-08-a6-design.md)와 [계획](superpowers/plans/2026-11-08-a6.md)을 실행한다. 독립 설계 검토는 중요한 미정 사항 없음으로 끝났다. 아래 기본값은 작성자가 기존 단일 처리 구조에 맞춰 선택한 것이며 개별 사용자 승인으로 주장하지 않는다.
+
+- LivePcapSource는 비차단 Ethernet libpcap 핸들을 RAII로 소유한다. promiscuous off, snaplen262144, immediate mode와 최대100ms의 ppoll 대기를 사용한다. 매 대기 전에 required select timeout을 재조회해 짧은 제한을 적용한다. 이 API 때문에 libpcap 최소 버전을1.9.0으로 올렸으며 현재1.10.4는 그대로 사용했다.
+- main의 live 전용 sigaction은 SIGINT/SIGTERM을 sig_atomic_t 요청으로 바꾸고 종료 시 복구한다. handler에서 Engine/pcap/log를 호출하지 않는다. source와 run_cli는 일반 StopRequest callback을 받고 임베딩 프로세스의 신호 정책을 바꾸지 않는다. 바쁜 수집에서도 매 패킷 정지 요청을 확인한다.
+- pcap와live가 한 consume/finish 경로로 Engine과 renderer/Publisher를 공유한다. 모드는 EventContext/RunPublication의 명시적 값이며 기본값은 Pcap이다. PCAP의 기존225개 계약을 유지한다.
+- 정상 live 중지는 Stopped, 처리 오류는 Aborted, 파일 EOF는 Eof로 구분한다. 정상 live의 capture_complete=false/run_complete=true이며 이후 로그 완료는 독립적이다. source 핸들을 유지한 채 pcap_stats를 읽은 뒤 정리한다. 시각/Flow 만료는 실제 캡처 watermark 기준을 유지하고 무입력 벽시계를 섞지 않는다.
+- ps_recv/ps_drop/ps_ifdrop은 네이티브 폭의 원시 카운터다. Engine 처리 수·룰 Drop과 같다고 가정하지 않고 인터페이스 유실 통계의 플랫폼 의존성을 표시한다. API 미지원은 null/unavailable로 기록하며 정상 중지 자체를 실패로 바꾸지 않는다.
+- live logger 실패를 한 번 즉시 진단한 뒤 요청 정지/packet-count까지 판정한다. SIGPIPE/SIGXFSZ 격리는 A5 main 정책을 유지한다. human/진단 출력 장애는 중단할 수 있다.
+- 실제 수집 검사는 익명 network namespace 안의 전용 veth에만 합성 프레임을 주입한다. 스크립트는 호출 전 namespace ID와 현재 ID가 다를 때만 링크를 생성한다. 주소 자동 생성을 끄고 외부 통신·호스트 인터페이스·방화벽을 변경하지 않는다. 기본 CTest와 권한 있는 실제 검사를 구분한다.
+
+자동 commit/push·A7·AI 구현은 하지 않는다. IPS 완성 뒤 사용자 자체 테스트와 명시적 AI 착수 지시 조건을 유지한다.
+
 ## A5 JSONL와 공통 파이프라인 — 2026-11-08
 
 사용자가 승인한 [A5 설계](superpowers/specs/2026-11-07-a5-design.md)와 [계획](superpowers/plans/2026-11-07-a5.md)을 현재 폴더에서 구현한다. 자동 commit/push 없이 기존 변경을 보존한다. 아래 A0~A4 절의 미구현 표시는 각 단계 당시의 기록이다.
