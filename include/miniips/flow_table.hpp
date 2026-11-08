@@ -29,6 +29,8 @@ class FlowTable {
     // Entries expire when idle time is >= timeout. Negative time is invalid.
     std::size_t expire(std::chrono::microseconds now, const FlowExpirySink& on_expire = {});
     std::optional<FlowSnapshot> find(const FlowKey& key) const;
+    // Synchronous read-only visitation; the callback must not mutate/reenter.
+    void visit(const FlowExpirySink& visitor) const;
     FlowTableStats stats() const noexcept;
     std::size_t size() const noexcept;
 

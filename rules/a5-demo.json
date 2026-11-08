@@ -1,0 +1,7 @@
+{
+  "rules": [
+    {"sid": 1, "enabled": true, "priority": 0, "action": "pass", "protocol": "tcp", "scope": "packet", "content": "SAFE", "message": "Synthetic packet pass"},
+    {"sid": 2, "enabled": true, "priority": 10, "action": "alert", "protocol": "tcp", "scope": "stream", "content": "HELLO", "message": "Synthetic stream alert"},
+    {"sid": 3, "enabled": true, "priority": 20, "action": "drop", "protocol": "tcp", "scope": "stream", "content": "HELLO", "message": "Synthetic stream drop simulation"}
+  ]
+}

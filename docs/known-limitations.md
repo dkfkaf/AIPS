@@ -1,6 +1,23 @@
 # 알려진 한계
 
-## 현재 상태 — A4 완료, 2026-11-07
+## A5 적용 한계 — 2026-11-08
+
+- 오프라인 PCAP의 JSONL 통합이다. 모든 drop은 시뮬레이션(enforced=false), actual_drop_packets=0이다. live/Inline/AI/IPC와 실제 차단 성능은 구현·검증하지 않았다. A0~A8 이후 사용자 자체 테스트와 AI 착수 지시를 기다린다.
+- 원시 payload를 기록하지 않지만 주소·포트·룰 메시지 등 메타데이터가 포함된다. 새 파일만0600 요청하며 Windows 마운트/ACL의 접근 통제를 POSIX 권한 검사와 동일하게 보장하지 않는다. 부모 경로의 신뢰·디스크 내구성·로그 회전은 관리하지 않는다.
+- 동기 I/O 지연 상한, fsync 전원 장애 내구성, 실제 OOM에서 최종 이벤트/통계 발행을 보장하지 않는다. 부분 쓰기는 마지막 JSON 줄을 손상시킬 수 있다. 실패 뒤 재시도·이후 append·파일 삭제는 하지 않는다.
+- JSON stats의 log_status_at_emit=ok는 생성 시점 상태다. 이후 flush/close가 실패할 수 있어 최종 logger_summary의 log_complete와 종료 코드를 확인해야 한다. 정상 코드0도 skipped/rejected/incomplete=0을 뜻하지 않는다.
+- standalone --log -는 닫힌 stdout의 SIGPIPE를, 모든 --log 경로는 파일 크기 제한의 SIGXFSZ를 쓰기 오류로 처리한다. 임베딩한 run_cli/EventLogger 호출자는 프로세스 신호 정책을 직접 관리해야 한다. borrowed stream은 닫지 않는다. 파일 FD의 close 오류는 검사하지만 실제 장치 close 장애 주입은 미실행이다.
+- 결과는 원본 span을 소유하지 않고 종료 배치는 max_flows, 매치 배치는 최대 룰 수로 제한하지만 전체 RSS를 제한하지 않는다. 종료 Flow metadata는 마지막 active 통계를 위해 엔진 소멸까지 유지한다. 처리 예산 실패 뒤 inspect는 거부한다.
+- detections는 중복 억제 후 alert/drop 매치 수다. emitted는 Pass 포함, suppressed는 대표 매치 수이며 전체 문자열 occurrence 수가 아니다. stream_window_available은 제한된 stream window의 존재일 뿐 전체 트래픽 검사 완료가 아니다.
+- 기존 A3/A4 경미 보류와 IPv6/fragment/TCP gap·overlap·depth 등의 검사 한계는 계속 적용된다. 아래 절들은 각 단계 당시의 이력이다.
+
+### A5 독립 리뷰 경미 보류3건
+
+1. flow/created의 packet_number와 direction은 null이다. 생성 패킷은 같은 flow_id의 verdict와 연결할 수 있으나 패킷 번호만으로 조회하면 생성 이벤트가 제외된다. 종료 이벤트의 최초 관측 방향 정책은 유지한다.
+2. 직렬화/줄 상한 실패도 로거 전체를 실패 상태로 고정해 이후 borrowed stream flush를 생략한다. 같은 sink에 다시 접근하지 않는 승인 정책을 유지하므로 이전 수락 레코드가 스트림 버퍼에 남을 수 있다. 최종 코드1/log_complete=0을 확인해야 한다.
+3. C++ 공개 LoggerConfig에서 max_line_bytes를65536보다 크게 지정할 수 있다. CLI는 이 옵션을 노출하지 않고65536을 사용하며 내장 발행기도 작은 메타데이터만 생성한다. 직접 라이브러리 호출자의 사용자 지정 상한까지64 KiB로 강제하지 않는다.
+
+## A4 완료 당시 기록 — 2026-11-07
 
 - 리뷰 중요 문제2건 수정 뒤 Debug·Release/clang-tidy·ASan/UBSan에서 각각184/184와 포맷 검사가 통과했다. [실행 증거](a4-validation-2026-11-07.json)와 [테스트 기록](test-plan.md)에 실제 결과를 기록했다. 경미 리뷰3건은 아래에 보류한다.
 - KMP는 각 룰의 관련 영역을 다시 검색한다. 최대1024룰을 허용하지만 그 규모의 처리량/지연/RSS 또는 AC 대비 성능은 측정하지 않았다.

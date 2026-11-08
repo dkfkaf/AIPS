@@ -202,6 +202,15 @@ std::optional<FlowSnapshot> FlowTable::find(const FlowKey& key) const {
     return position->second.snapshot;
 }
 
+void FlowTable::visit(const FlowExpirySink& visitor) const {
+    if (visitor) {
+        for (const auto& [key, entry] : flows_) {
+            static_cast<void>(key);
+            visitor(entry.snapshot);
+        }
+    }
+}
+
 FlowTableStats FlowTable::stats() const noexcept {
     return {created_, expired_, rejected_, flows_.size()};
 }

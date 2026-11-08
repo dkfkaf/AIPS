@@ -2,11 +2,32 @@
 
 C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드는 교육·연구용 프로젝트다. Suricata에서 영감을 얻은 독립 구현이다.
 
-**현재 상태(2026-11-07): A0~A4 검증 완료.** JSON 룰 로딩과 KMP packet/stream 판정을 PCAP에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일한 184개가 각각 모두 통과했고 포맷 검사도 통과했다. A4 독립 리뷰 중요2건은 회귀 테스트로 수정했고 경미3건은 [알려진 한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A4 실행 증거](docs/a4-validation-2026-11-07.json)를 참고한다. IPS 전체 완성과 사용자 자체 테스트는 앞으로의 단계다.
+**현재 상태(2026-11-08): A0~A5 검증 완료.** 파싱 → Flow → TCP → 룰 → JSONL을 공통 Engine에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일한225개가 각각 통과했고 실패·skip0, 포맷 검사도 통과했다. 독립 리뷰 중요1건(SIGXFSZ)을 실제 회귀로 수정했고 경미3건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A5 실행 증거](docs/a5-validation-2026-11-08.json)를 참고한다. IPS 전체 완성과 사용자 자체 테스트는 앞으로의 단계다.
 
 앞서 발생했던 WSL 설치 오류와 도구 부재는 [환경 복구 전 기록](docs/a0-validation-2026-11-05.json)에, 복구 후 실제 명령과 결과는 [Linux 실행 기록](docs/a0-validation-2026-11-05-linux.json)에 보관한다.
 
 작업 규칙은 [AGENTS.md](AGENTS.md), 기능 계약은 [PROJECT_SPEC.md](PROJECT_SPEC.md), 개발 단계는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 코드 규칙은 [CODING_STYLE.md](CODING_STYLE.md)를 따른다.
+
+## A5 JSONL 로그와 파이프라인 — 2026-11-08
+
+공통 Engine의 처리 결과를 JSONL로 기록한다. 로그가 실패해도 남은 PCAP 판정은 계속하며 최종 종료 코드는1이다. 실제 차단은 하지 않는다. 로그 옵션을 생략하면 기존 콘솔 출력이다.
+
+```bash
+./build/tests/miniips_fixture_writer ./build/tests/fixtures
+./build/miniips --mode pcap --input build/tests/fixtures/jsonl_pipeline.pcap \
+  --rules rules/a5-demo.json --max-flows 1 --tcp-stream-bytes 16 --log events-a5.jsonl
+# stdout에 JSONL만 출력; 요약·진단은 stderr
+./build/miniips --mode pcap --input build/tests/fixtures/jsonl_pipeline.pcap \
+  --rules rules/a5-demo.json --max-flows 1 --tcp-stream-bytes 16 --log -
+```
+
+- `--log PATH`는 새 파일만 생성한다. 기존 파일/입력/룰/링크를 덮어쓰지 않고 부모 폴더를 만들지 않는다. Linux0600을 요청한다. 실패한 부분 로그도 남긴다.
+- 이벤트는 alert/verdict/flow/parse_error/reassembly_warning/stats/engine_error의7종이다. schema_version=1, mode=pcap, enforced=false이며 payload 원문을 넣지 않는다. 공통 문맥 중 알 수 없는 값은 null이다.
+- timestamp는 캡처 UTC, timestamp_us는 정확한 마이크로초 정수다. Flow 종료·stats는 watermark를 사용한다. 메시지는4096바이트, 한 줄은65536바이트 상한이며 제어문자는 escape한다.
+- 예시의 논리적 신규 탐지2·매치 emitted3(Pass 포함)·시뮬레이션 Drop3은 서로 다른 집계다. 재전송/상충 재전송의 Drop은 유지되지만 alert가 중복 발행되지는 않는다. 실제 차단은0이다.
+- JSON stats는 생성 시점 상태다. 이후 flush/close까지 확인한 최종 결과는 stderr `logger_summary ... log_complete=1/0`와 종료 코드에 있다. JSON에 미래 성공을 단정하는 log_complete를 넣지 않는다.
+- 반환 코드0은 EOF와 출력 완료,1은 설정/입력/처리/출력 실패,2는 사용법 오류다. 코드0이라도 skipped/rejected/incomplete가 있을 수 있다. 동기 I/O 지연·fsync 내구성·치명적 OOM의 최종 로그는 보장하지 않는다.
+- 라이브 수집과 실제 Inline은 후속 단계다. IPS A0~A8 완성 뒤 사용자가 자체 테스트하고 AI 착수를 지시하기 전에는 AI 개발을 시작하지 않는다.
 
 ## A4 JSON 룰 엔진 — 2026-11-07
 
@@ -39,9 +60,10 @@ JSON 룰 로더와 KMP 기반 packet/stream 룰 엔진을 구현했다. 중요 �
 - 최대 10,000개·유휴 120초 기본값, 설정 가능한 개수·시간 제한과 추적 거부 표시.
 - 방향별 TCP 순서 복원·중복 제거·first-seen 겹침 처리·불완전 사유와 버퍼/깊이 제한. EOF·유휴 만료·RST 정리.
 - JSON 전체 검증·KMP 검색·우선순위 alert/pass/drop·재전송 이벤트 억제와 제한된 상태 정리.
-- GoogleTest 169개와 CTest 프로세스 검사·fixture 준비 15개, 총184개를 Debug·Release·ASan/UBSan에서 각각 실행해 모두 통과했다.
+- JSONL 이벤트7종, 새 파일/표준 출력, 실패 고정·미기록 집계·최종 flush/close 결과 반영과 sink 없는 공통 Engine.
+- 기존184개와 신규41개, 총225개를 Debug·Release/clang-tidy·ASan/UBSan에서 각각 실행해 모두 통과했다.
 
-룰 탐지·JSONL 이벤트·라이브 수집·차단·AI·IPC는 후속 단계다.
+라이브 수집·실제 차단·AI·IPC는 후속 단계다.
 
 ## Linux 개발 의존성
 

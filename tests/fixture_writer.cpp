@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "fixtures/flow_fixtures.hpp"
+#include "fixtures/jsonl_fixtures.hpp"
 #include "fixtures/reassembly_fixtures.hpp"
 #include "pcap_fixture.hpp"
 
@@ -18,6 +19,7 @@ int main(int argc, char* argv[]) {
         using miniips::test::tcp_packet;
         using miniips::test::udp_packet;
         using miniips::test::write_pcap;
+        miniips::test::write_jsonl_fixture(directory / "jsonl_pipeline.pcap");
         write_pcap(directory / "normal.pcap", {record(tcp_packet()), record(udp_packet())});
         write_pcap(directory / "mixed.pcap",
                    {record({std::byte{1}, std::byte{2}}), record(udp_packet())});

@@ -1,5 +1,21 @@
 # 테스트 계획과 실제 검증
 
+## A5 최종 판정 — 2026-11-08
+
+**완료.** [승인 설계](superpowers/specs/2026-11-07-a5-design.md)에 따라 Engine → EventPublisher → EventLogger를 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan은 같은225개 각각 전부 통과했고 실패·disabled·skip0, 포맷 검사도 통과했다. 독립 리뷰 중요1건(SIGXFSZ)을 실제 RED→GREEN으로 수정했으며 경미3건은 [한계](known-limitations.md)에 보류했다. [A5 실행 증거](a5-validation-2026-11-08.json)에 JUnit·명령·해시·실제 출력·리뷰를 기록한다. 아래 A4 이하는 당시 결과이며 현재 A5 기능 부재를 뜻하지 않는다.
+
+- 로거12개: 공통 schema/7종 이름/uint64/UTC·null·범위 밖 시각, global locale 독립성, 제어문자·잘못된 UTF-8·절단, reserved key/줄 상한, 부분 쓰기·flush 예외·실패 고정, 독점 생성/600/링크·부모 경로.
+- Engine11개: 소유 수명, valid/parse 오류·양방향·만료, 재전송 중복 억제, Flow 용량 후 packet fallback, EOF/abort 반복/후속 inspect 거부, 배열 정리, 역순 시각·설정/처리 예산 오류.
+- Publisher5개: 종료 watermark·최초 관측 방향, gap_filled 정보 구별, Flow 거부 후 verdict, 외부 오류 절단, 기록 실패 후 엔진 진행/정리.
+- CLI12개: stdout JSONL 재파싱·stats 자기 포함, 파일과 기존 콘솔, 입력/룰/기존/링크 보존, 빈 입력/null·입력 열기 오류/abort, 룰 우선 검증, 옵션 오류, sink 쓰기/최종 flush 오류, Pass/Drop·escape, 처리 예산 오류에 거짓 Allow 없음, 합성 PCAP의 이벤트7종/독립 논리 집계.
+- standalone jsonl.process1개(내부7시나리오): 실제 파일/0600·기존 파일 보존·stdout·손상 PCAP·SIGPIPE·SIGXFSZ의 stdout/파일 경로. Python3로 이번 세 구성 모두 등록·실행됐다. 기존184개+신규41개=225개다.
+
+RED 기록은 build-a5-work에 보관한다. 로거/Engine 최초 missing-header는 컴파일 실패이며 실행 성공으로 세지 않는다. 숫자 locale 회귀는 실제 assertion RED 후 classic locale로 GREEN. CLI --log 미구현10개 assertion RED, 실제 닫힌 stdout은 exit -13(SIGPIPE) RED 후 main에서 처리한다. 통합 중 기존 console flush 진단 누락은 기존 회귀가 포착해 복구했다. 합성 입력은 first-seen 상충 재전송까지 포함해 healthy Drop3이며 failed-sink 검사도 이 기준과 비교한다.
+
+리뷰 후 파일 크기 제한1024바이트에서 실제 exit -25를 재현하고 main의 신호 정책을 수정했다. stdout JSONL과 파일 로그 양쪽이 나머지10패킷(9parsed/1skipped), Drop3을 유지한 뒤 exit1/log_complete0으로 종료했다. 최종 root·uid65534 실행에서 각7시나리오를 통과했다. 건강한 합성 출력은25줄, detections2/emitted3/suppressed4/Drop3/actualDrop0이다. 기록에 미래 flush/close 성공을 단정하는 log_complete는 없고 최종 stderr 요약만 이를 확정한다.
+
+A4 소스47개 중40개는 해시가 같고7개만 계획된 연결 변경이다. 신규 소스/룰/프로세스 검사14개를 더한61개 해시와 문서·fixture·실행 증거 해시를 기록했다. strict tidy의 optional 접근과 미사용 parse 반환값 진단도 억제 없이 해소했다. 실제 장치 close 실패/실제 bad_alloc 주입, 방화벽/NFQUEUE/live/Inline/AI 및 처리량·지연·fsync 내구성 검사는 미실행이다. 자동 commit/push 없이 현재 폴더에 남기고 A6는 다음 지시를 기다린다.
+
 ## A4 최종 판정 — 2026-11-07
 
 **완료.** [승인 설계](superpowers/specs/2026-11-07-a4-design.md)에 따라 KMP 룰 엔진을 구현했다. 리뷰 중요2건을 수정한 최종 소스로 Debug·Release/clang-tidy·ASan/UBSan 각각184/184, 실패·skip0과 포맷 검사를 통과했다. 정상/악성 예시의 결정적 alert/pass/drop과 모든 룰 테스트를 실제 확인해 A4 인수 조건을 충족했다. 경미3건은 명시적으로 보류한다.

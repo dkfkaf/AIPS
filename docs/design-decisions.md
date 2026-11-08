@@ -1,5 +1,20 @@
 # 설계 결정
 
+## A5 JSONL와 공통 파이프라인 — 2026-11-08
+
+사용자가 승인한 [A5 설계](superpowers/specs/2026-11-07-a5-design.md)와 [계획](superpowers/plans/2026-11-07-a5.md)을 현재 폴더에서 구현한다. 자동 commit/push 없이 기존 변경을 보존한다. 아래 A0~A4 절의 미구현 표시는 각 단계 당시의 기록이다.
+
+- Engine inspect는 로그 I/O 없이 파서·Flow·TCP·룰을 처리하고 원본 span 없는 소유 결과를 반환한다. CLI는 한 결과씩 발행·폐기한다. 만료/EOF/abort에서 방향별 요약을 복사한 뒤 버퍼·룰 배열을 정리하며 종료는 Flow ID로 정렬한다. 마지막 Flow active 통계는 유지한다.
+- 설정된 룰 상태 예산 실패는 owned processing_error로 반환해 이미 수집된 만료 기록을 보존하고 엔진을 실패 상태로 고정한다. 해당 패킷의 Allow verdict를 만들지 않고 abort로 정리한다. 호출자는 processing_error를 확인해야 한다. 실제 OOM의 강한 예외 보장은 제공하지 않는다.
+- EventPublisher가 이벤트7종을 한 건씩 생성하며 Pass/억제된 match는 alert가 아니다. 논리적 emitted(Pass 포함)/suppressed/detections/Drop 집계와 실제 기록 성공 수는 독립적이다. 오류 정보는 ErrorInfo의 이름 있는 필드로 묶어 같은 타입의 인자 혼동을 줄인다.
+- schema_version=1, mode=pcap/enforced=false. 시각은 캡처 UTC microseconds와 timestamp_us 정수이며 문자열은 classic locale을 사용한다. 종료는 watermark, 빈 입력은 null, 지원 범위 밖 문자열 시각은 null/out_of_range다. 외부 메시지4096바이트·줄65536바이트 상한, ASCII/DEL escape·invalid UTF-8 replacement를 적용한다. payload 원문을 기록하지 않는다.
+- --log PATH는 Linux O_EXCL/O_CLOEXEC 새 파일만0600 요청해 생성한다. 기존 파일·입력·룰·심볼릭/하드 링크를 보존한다. --log -는 stdout JSONL 전용이고 요약/진단은 stderr다. 옵션이 없으면 기존 콘솔 경로를 유지한다.
+- 최초 로그 실패를 고정하고 이후 쓰기를 중단·미기록 집계하지만 나머지 PCAP 판정은 계속해 코드1로 종료한다. standalone main은 --log -의 SIGPIPE와 모든 --log 경로의 SIGXFSZ를 무시해 실제 write 오류로 처리한다. 임베딩 라이브러리는 호출자의 신호 정책을 바꾸지 않는다.
+- JSON stats는 생성 시점 log_status_at_emit와 자신을 포함한 성공 수만 표시한다. 미래 flush/close 성공을 예상하는 log_complete를 넣지 않는다. finish 이후 stderr의 logger_summary와 종료 코드가 최종 로그 완료 여부를 확정한다. fsync 내구성·I/O 지연 상한은 보장하지 않는다.
+- Git을 바꾸는 스크립트 대신 ignored build-a5-work에 기준 복사본/실행 증거/판단 기록을 보관한다. 삭제하면 미커밋 A5의 근거를 잃으므로 보존한다.
+
+**A0~A8 IPS → 사용자 자체 테스트 → 결과·명시적 지시 확인 → B0 AI** 순서를 유지한다. A6/Inline/AI는 이번에 구현하지 않는다.
+
 ## 사용자 진행 결정과 A4 — 2026-11-07
 
 **IPS 먼저 완성(A0~A8) → 사용자 자체 테스트 → 결과 확인과 AI 착수 지시 → AI 모델 개발(B0~B5) → 연동(C단계)** 순서를 사용자가 지정했다. A8의 개발자 검증만으로 B0를 자동 시작하지 않는다. AGENTS.md, PROJECT_SPEC.md, IMPLEMENTATION_PLAN.md, README에 같은 조건을 기록했다. 이 결정은 AI를 제거하는 것이 아니라 사용자 자체 테스트 이후로 착수 시점을 정한 것이다.

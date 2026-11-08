@@ -49,9 +49,18 @@ target_link_libraries(miniips_reassembly PUBLIC miniips_flow)
 
 add_library(miniips_cli STATIC src/cli.cpp)
 
+add_library(miniips_logging STATIC src/event_logger.cpp)
+target_link_libraries(miniips_logging PUBLIC miniips_flow nlohmann_json::nlohmann_json)
+
 add_library(miniips_rules STATIC src/rule_loader.cpp src/rule_engine.cpp)
 target_link_libraries(miniips_rules PUBLIC miniips_reassembly nlohmann_json::nlohmann_json)
-target_link_libraries(miniips_cli PRIVATE miniips_packet miniips_flow miniips_reassembly miniips_rules)
+
+add_library(miniips_engine STATIC src/engine.cpp)
+target_link_libraries(miniips_engine PUBLIC miniips_packet miniips_rules)
+
+add_library(miniips_publisher STATIC src/event_publisher.cpp)
+target_link_libraries(miniips_publisher PUBLIC miniips_engine miniips_logging)
+target_link_libraries(miniips_cli PRIVATE miniips_publisher)
 target_include_directories(miniips_cli PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_compile_definitions(miniips_cli PRIVATE MINIIPS_VERSION="${PROJECT_VERSION}")
 
@@ -87,6 +96,12 @@ if(MINIIPS_CLANG_FORMAT)
             src/rule_engine.cpp tests/test_rule_engine.cpp tests/test_reassembly_ranges.cpp
             tests/fixtures/rule_fixtures.hpp
             tests/test_cli_rules.cpp
+            include/miniips/event.hpp include/miniips/event_logger.hpp src/event_logger.cpp
+            tests/test_event_logger.cpp
+            include/miniips/engine.hpp src/engine.cpp tests/test_engine.cpp
+            include/miniips/event_publisher.hpp src/event_publisher.cpp tests/test_event_publisher.cpp
+            tests/test_cli_jsonl.cpp
+            tests/fixtures/jsonl_fixtures.hpp
             tests/test_cli_flow.cpp tests/fixtures/flow_fixtures.hpp
             src/cli.cpp src/main.cpp src/packet_parser.cpp src/pcap_source.cpp
             tests/test_cli.cpp tests/test_packet_parser.cpp tests/test_pcap_source.cpp

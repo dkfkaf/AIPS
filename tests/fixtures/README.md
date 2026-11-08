@@ -1,5 +1,11 @@
 # 고정 입력과 합성 PCAP
 
+## A5 JSONL 전체 입력 — 2026-11-08
+
+jsonl_pipeline.pcap은 SYN, 역순 HEL/LO와 gap 복구, 재전송, 역방향 SAFE Pass, 겹침 충돌, 깊이 초과, UDP 추적 거부, 손상 프레임에 따른 만료, 새 UDP EOF를 포함한다. tests/fixtures/jsonl_fixtures.hpp의 독립 인코더가 생성한다. rules/a5-demo.json, --max-flows 1 --tcp-stream-bytes 16과 함께 사용하면 이벤트7종, 논리적 신규 탐지2, emitted3(Pass 포함), 시뮬레이션 Drop3를 확인한다. first-seen 정책으로 상충 재전송도 이전 Drop을 유지한다. 실제 공격/차단 성능의 증거가 아니다.
+
+tests/check_jsonl_process.py는 stdout JSONL 재파싱·새 파일/0600·기존 파일 보존·손상 PCAP abort·닫힌 stdout·파일 크기 제한(stdout과 파일 로그) 후 검사 계속의7시나리오를 실제 별도 프로세스로 검사한다. Python3가 있으면 CTest jsonl.process에 등록한다. 없는 환경은 이 검사가 빠지므로 A5 인수 시 별도 실행이 필요하다.
+
 ## A4 룰 입력 — 2026-11-07
 
 기존 fixture writer에 rules_packet.pcap(BLOCKME packet drop 시뮬레이션)과 rules_retransmit.pcap(SYN → HEL → LO → HEL 재전송 → 순수 ACK)을 추가했다. 두 번째는 stream HELLO drop 룰 사용 시 events1/suppressed1/simulated_drops2이고 ACK는 Allow다. 원본 payload는 콘솔에 출력하지 않는다. 예시 JSON은 rules/example.json이며 HELLO stream alert와 BLOCKME packet drop 두 개다. 실제 네트워크 차단을 테스트한 것은 아니다.
