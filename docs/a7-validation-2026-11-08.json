@@ -1,0 +1,925 @@
+{
+  "date": "2026-11-08",
+  "timezone": "Asia/Seoul",
+  "stage": "A7",
+  "result": "complete_with_documented_minor",
+  "workspace": "C:/Users/purt1/OneDrive/Desktop/AIPS",
+  "baseline": {
+    "head": "2bc66a06acd05b0236a24b17f37818e45a4fab2b",
+    "previous_stage": "A6",
+    "tests": 238,
+    "source_files_checked": 69,
+    "unchanged": 58,
+    "planned_changes": [
+      "CMakeLists.txt",
+      "include/miniips/capture_source.hpp",
+      "include/miniips/event.hpp",
+      "include/miniips/event_publisher.hpp",
+      "include/miniips/packet.hpp",
+      "src/cli.cpp",
+      "src/event_logger.cpp",
+      "src/event_publisher.cpp",
+      "src/main.cpp",
+      "src/packet_parser.cpp",
+      "tests/CMakeLists.txt"
+    ],
+    "unexpected_changes": 0,
+    "automatic_commit_push": false
+  },
+  "design": "docs/superpowers/specs/2026-11-08-a7-design.md",
+  "plan": "docs/superpowers/plans/2026-11-08-a7.md",
+  "profiles": [
+    {
+      "profile": "debug",
+      "tests": 257,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "inline": {
+        "cases": 14,
+        "failed": 0,
+        "names": [
+          "no_listener_fails_closed",
+          "real_accept_pass_alert_drop_and_accounting",
+          "stopped_listener_fails_closed",
+          "idle_sigint_flag_first",
+          "idle_sigterm",
+          "duplicate_binding_preserves_original",
+          "unsupported_icmp_accepted_and_logged",
+          "logger_closed_preserves_later_verdicts",
+          "logger_limited_stdout_preserves_later_verdicts",
+          "logger_limited_file_preserves_later_verdicts",
+          "file_0600_and_existing_preserved",
+          "human_exception_after_verdict_no_duplicate",
+          "permission_denied",
+          "own_rules_removed_communication_restored"
+        ],
+        "isolated": true,
+        "canonical_received": 4,
+        "accepted": 3,
+        "actual_drop_packets": 1,
+        "host_firewall_changed": false
+      },
+      "live": {
+        "cases": 11,
+        "failed": 0,
+        "names": [
+          "packet_limit_full_pipeline",
+          "idle_sigint",
+          "idle_sigterm",
+          "active_sigint",
+          "closed_stdout_continues",
+          "file_limit_stdout",
+          "file_limit_owned_log",
+          "new_file_0600_and_preservation",
+          "rejected_device_no_such_ids0",
+          "rejected_device_any",
+          "capture_permission_denied"
+        ],
+        "packet_limit_processed": 10,
+        "detections": 2,
+        "simulated_drops": 3,
+        "actual_drop_packets": 0,
+        "isolated": true
+      },
+      "junit": "build-a7-work/debug-tests.xml",
+      "build_log": "build-a7-work/debug-build.log",
+      "test_log": "build-a7-work/debug-tests.log",
+      "inline_log": "build-a7-work/inline-debug.log",
+      "live_log": "build-a7-work/live-debug.log"
+    },
+    {
+      "profile": "release",
+      "tests": 257,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "inline": {
+        "cases": 14,
+        "failed": 0,
+        "names": [
+          "no_listener_fails_closed",
+          "real_accept_pass_alert_drop_and_accounting",
+          "stopped_listener_fails_closed",
+          "idle_sigint_flag_first",
+          "idle_sigterm",
+          "duplicate_binding_preserves_original",
+          "unsupported_icmp_accepted_and_logged",
+          "logger_closed_preserves_later_verdicts",
+          "logger_limited_stdout_preserves_later_verdicts",
+          "logger_limited_file_preserves_later_verdicts",
+          "file_0600_and_existing_preserved",
+          "human_exception_after_verdict_no_duplicate",
+          "permission_denied",
+          "own_rules_removed_communication_restored"
+        ],
+        "isolated": true,
+        "canonical_received": 4,
+        "accepted": 3,
+        "actual_drop_packets": 1,
+        "host_firewall_changed": false
+      },
+      "live": {
+        "cases": 11,
+        "failed": 0,
+        "names": [
+          "packet_limit_full_pipeline",
+          "idle_sigint",
+          "idle_sigterm",
+          "active_sigint",
+          "closed_stdout_continues",
+          "file_limit_stdout",
+          "file_limit_owned_log",
+          "new_file_0600_and_preservation",
+          "rejected_device_no_such_ids0",
+          "rejected_device_any",
+          "capture_permission_denied"
+        ],
+        "packet_limit_processed": 10,
+        "detections": 2,
+        "simulated_drops": 3,
+        "actual_drop_packets": 0,
+        "isolated": true
+      },
+      "junit": "build-a7-work/release-tests.xml",
+      "build_log": "build-a7-work/release-build.log",
+      "test_log": "build-a7-work/release-tests.log",
+      "inline_log": "build-a7-work/inline-release.log",
+      "live_log": "build-a7-work/live-release.log"
+    },
+    {
+      "profile": "sanitize",
+      "tests": 257,
+      "failures": 0,
+      "disabled": 0,
+      "skipped": 0,
+      "inline": {
+        "cases": 14,
+        "failed": 0,
+        "names": [
+          "no_listener_fails_closed",
+          "real_accept_pass_alert_drop_and_accounting",
+          "stopped_listener_fails_closed",
+          "idle_sigint_flag_first",
+          "idle_sigterm",
+          "duplicate_binding_preserves_original",
+          "unsupported_icmp_accepted_and_logged",
+          "logger_closed_preserves_later_verdicts",
+          "logger_limited_stdout_preserves_later_verdicts",
+          "logger_limited_file_preserves_later_verdicts",
+          "file_0600_and_existing_preserved",
+          "human_exception_after_verdict_no_duplicate",
+          "permission_denied",
+          "own_rules_removed_communication_restored"
+        ],
+        "isolated": true,
+        "canonical_received": 4,
+        "accepted": 3,
+        "actual_drop_packets": 1,
+        "host_firewall_changed": false
+      },
+      "live": {
+        "cases": 11,
+        "failed": 0,
+        "names": [
+          "packet_limit_full_pipeline",
+          "idle_sigint",
+          "idle_sigterm",
+          "active_sigint",
+          "closed_stdout_continues",
+          "file_limit_stdout",
+          "file_limit_owned_log",
+          "new_file_0600_and_preservation",
+          "rejected_device_no_such_ids0",
+          "rejected_device_any",
+          "capture_permission_denied"
+        ],
+        "packet_limit_processed": 10,
+        "detections": 2,
+        "simulated_drops": 3,
+        "actual_drop_packets": 0,
+        "isolated": true
+      },
+      "junit": "build-a7-work/sanitize-tests.xml",
+      "build_log": "build-a7-work/sanitize-build.log",
+      "test_log": "build-a7-work/sanitize-tests.log",
+      "inline_log": "build-a7-work/inline-sanitize.log",
+      "live_log": "build-a7-work/live-sanitize.log"
+    }
+  ],
+  "same_tests_all_profiles": true,
+  "groups": {
+    "previous": 238,
+    "inline_core": 6,
+    "inline_logging": 5,
+    "inline_cli": 2,
+    "queue_config": 1,
+    "inline_guard": 1,
+    "queue_lifecycle_fault_injection": 4
+  },
+  "format": {
+    "result": "passed",
+    "log": "build-a7-work/format.log"
+  },
+  "isolated_inline": {
+    "host_firewall_changed": false,
+    "host_interfaces_changed": false,
+    "fresh_anonymous_netns": true,
+    "cases_each_profile": 14,
+    "canonical_callbacks": 4,
+    "canonical_accepts": 3,
+    "canonical_drops": 1,
+    "trace_rows": 9,
+    "trace": "build-a7-work/inline-sample.jsonl",
+    "no_bypass": true,
+    "queue_fail_open": false,
+    "tool_installation": "apt download + dpkg-deb extract, no services/postinst",
+    "nft_version": "1.0.9-1ubuntu0.1",
+    "libnftnl_version": "1.2.6-2build1",
+    "libnetfilter_queue_version": "1.0.5",
+    "actual_shutdown_receipt_gap_documented": true
+  },
+  "review": {
+    "completed_reviews": 1,
+    "critical": 0,
+    "important": 1,
+    "important_fixed": 1,
+    "fix_passes": 1,
+    "rereviews": 0,
+    "record": "build-a7-work/final-review.md",
+    "resolution": "build-a7-work/review-resolution.md",
+    "minor_deferred": [
+      "recvmsg ENOBUFS/ppoll POLLERR may omit overflow_errors classification; still aborts"
+    ],
+    "minor_documented_fix": "README stale inline-status text corrected in planned documentation sweep"
+  },
+  "red_green": {
+    "review_red": "build-a7-work/review-fix-red.log",
+    "review_green": "build-a7-work/review-fix-green.log",
+    "review_cases": 4,
+    "fault_test_real_queue_operations": 0,
+    "constructor_unwind_member_order": "static lifetime correction, no claimed runtime RED",
+    "shutdown_experiment": "build-a7-work/inline-exception-detail.log"
+  },
+  "commands": [
+    "bash build-a7-work/run-profile.sh <debug|release|sanitize>",
+    "cmake --build <build> --parallel <2|3|1>; cmake --build build --target format-check",
+    "ctest --test-dir <build> --output-on-failure --no-tests=error --output-junit ../build-a7-work/<profile>-tests.xml",
+    "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 for sanitizer suite and child processes",
+    "MINIIPS_A7_HOST_NETNS=<caller netns>; unshare --net -- python3 tests/check_inline_process.py <build>/miniips rules/a7-demo.json <extracted-nft> [exclusive-trace-file]",
+    "MINIIPS_A6_HOST_NETNS=<caller netns>; unshare --net -- python3 tests/check_live_process.py <build>/miniips <build>/tests/fixtures rules/a5-demo.json"
+  ],
+  "not_run": [
+    "real TCP stream blocking",
+    "throughput/latency/sustained-load benchmark",
+    "forced kernel queue overflow/loss and every receive syscall fault",
+    "real bad_alloc",
+    "remote CI",
+    "A8 and AI"
+  ],
+  "user_checkpoint": {
+    "order": "IPS A0-A8 -> user self-tests -> explicit AI direction",
+    "a8_started": false,
+    "ai_started": false
+  },
+  "source_hashes": [
+    {
+      "path": ".clang-format",
+      "sha256": "077474f58d20c84bc69e32538a43e0984fe42978fba524357deaa29743130084"
+    },
+    {
+      "path": ".clang-tidy",
+      "sha256": "c152f5bcb395dbe1caeabc5a8da0f0448b03e9d01c52588eb5a5d93c0d4f888e"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "7fb777e915e83484b2576a4f145d1863af504c4aceb378cf4eec0cb8b376bfaa"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "e25dd855dd729cf52ce2bbf9d795847e3144510731c4c8b4951198272b34a456"
+    },
+    {
+      "path": "include/miniips/capture_source.hpp",
+      "sha256": "c2d7b9298e532327e80bb15bfc19be28618091dee29970a601278c6952b2f753"
+    },
+    {
+      "path": "include/miniips/cli.hpp",
+      "sha256": "c14ad164e36711a01057b80822e1fc4c6f5ca6073a0402467ff5b4099a8131e7"
+    },
+    {
+      "path": "include/miniips/detection_decision.hpp",
+      "sha256": "6595dfac10fd1632d1dc02c2c0940e2607b9222dd7a0bb805e0958cdcc23c116"
+    },
+    {
+      "path": "include/miniips/engine.hpp",
+      "sha256": "855249b19a1cc18705ad0af775e1535757bf5fa6cbba86f5e431da0c567dd8b2"
+    },
+    {
+      "path": "include/miniips/event.hpp",
+      "sha256": "f95a6c63644edc4eb30cce18e03faae87a7fbaf8d819107a0dcb337d880480c6"
+    },
+    {
+      "path": "include/miniips/event_logger.hpp",
+      "sha256": "ef02c23e47cfd20d95ee3fb5cbe63ab7a8f32e2e5609d9c9d6769538acbeb383"
+    },
+    {
+      "path": "include/miniips/event_publisher.hpp",
+      "sha256": "b7f753f160b8ab6f817ed4151b9f95e128e4780a1b3ca85c91ecc650812e3220"
+    },
+    {
+      "path": "include/miniips/flow.hpp",
+      "sha256": "32cba00047ae0084ddc5d0e039539715cdb247020f1e269c6baf40a5460e6eee"
+    },
+    {
+      "path": "include/miniips/flow_table.hpp",
+      "sha256": "b6c215fb6e112265ae7b86cc646852d2407578b6770ccb67efcfd60df89fa5a5"
+    },
+    {
+      "path": "include/miniips/live_pcap_source.hpp",
+      "sha256": "5677521379952beaa756d00e7e45c60e53731d0e82f4504e27b09104a9a03a9a"
+    },
+    {
+      "path": "include/miniips/nfqueue_source.hpp",
+      "sha256": "ae167d62e43381ac71d0fe4a943481e3aa8cf30c106c5c3eaaee4c7727629251"
+    },
+    {
+      "path": "include/miniips/packet.hpp",
+      "sha256": "4c1036945be18215e47529718ff03468705234aa2dad4fded2d36d0d68711d06"
+    },
+    {
+      "path": "include/miniips/packet_parser.hpp",
+      "sha256": "10c434eec8d9ea556309fa8efc78f070988b6ebf151d6e9e50c40c51309bd0c7"
+    },
+    {
+      "path": "include/miniips/rule.hpp",
+      "sha256": "a41757ebed161ee5226df6c7d9915b0227649cf12615f43bddb0554d794db44f"
+    },
+    {
+      "path": "include/miniips/rule_engine.hpp",
+      "sha256": "e3f861dd1e1c2a782f566f1534501b0dd74a1f4942a53ed8e69a031291663070"
+    },
+    {
+      "path": "include/miniips/rule_loader.hpp",
+      "sha256": "ed7a1e30b5efd221554d87bccf4034ee8e5ba10895a150b2add8973b750b76b9"
+    },
+    {
+      "path": "include/miniips/tcp_reassembler.hpp",
+      "sha256": "c8abdeb6cfdd3f782c07c80ed59ffb6399348f862330cc59944d9a6863ddafe6"
+    },
+    {
+      "path": "include/miniips/verdict.hpp",
+      "sha256": "16d4699a7b9d39ba62f2a1fbf4ac72bfa49864cc0f1820f68cfbe6e3c317258e"
+    },
+    {
+      "path": "rules/a5-demo.json",
+      "sha256": "01b17ceddd5b80a58677d93de1a34e719b06b6355b7afb8a6bb031841fe70e5f"
+    },
+    {
+      "path": "rules/a7-demo.json",
+      "sha256": "247e265d13d23ae16523f10b8ec18c37d4f6900c602ea9285074d4a44f828816"
+    },
+    {
+      "path": "rules/example.json",
+      "sha256": "6dfefc84cbf8bb0acb69ea7feb8f17a749e8435d3c81798ab741b5887a32b5ba"
+    },
+    {
+      "path": "src/cli.cpp",
+      "sha256": "0325c627e11bdbd255e4b1dba84aabb3e2dbc6917718a96054b32958e9e8a106"
+    },
+    {
+      "path": "src/engine.cpp",
+      "sha256": "ef3807fc58c6f14020fb85ce9759d92be7414859c9bf64466a5697b8e25109d8"
+    },
+    {
+      "path": "src/event_logger.cpp",
+      "sha256": "6f29505b2e370543b1134eab7d26a963ed6c7e1f185a385010f6aef3e4d25e16"
+    },
+    {
+      "path": "src/event_publisher.cpp",
+      "sha256": "9596d302fb1aadab08be13cb2dfbdb56a701bc26437950d8ecf829757768f2c6"
+    },
+    {
+      "path": "src/flow_table.cpp",
+      "sha256": "734a4bfaea8d425f733ff146ecf127c564fda68e96ef5c03144efacb8f54a1d4"
+    },
+    {
+      "path": "src/live_pcap_source.cpp",
+      "sha256": "8e61828e4f546fcd62c26fcc6dac492384c2a6f0314567fc4c00b7b98c165702"
+    },
+    {
+      "path": "src/main.cpp",
+      "sha256": "08ec8fd4d3a86b23c20dccf44177d7cca9d2abf3cefc261a50c3297e007b4c93"
+    },
+    {
+      "path": "src/nfqueue_source.cpp",
+      "sha256": "c34b769b36d8fa904e380d629cdb7ceb743849a22014c0d4fa759be7895d867c"
+    },
+    {
+      "path": "src/packet_parser.cpp",
+      "sha256": "4167d8cb07d8d87f032fb2789b1d1806f532af4879a913125d72b98d725bb4a5"
+    },
+    {
+      "path": "src/pcap_source.cpp",
+      "sha256": "d62f59da1f109f02eca76f53a3eb25512722096ecd61629bf342b87644ece4ad"
+    },
+    {
+      "path": "src/pcap_timestamp.hpp",
+      "sha256": "4be8b1d4f4a329f98726375027fa15ef2f8310a52dbb7948c38413bc0c32bafe"
+    },
+    {
+      "path": "src/rule_engine.cpp",
+      "sha256": "6cc4b41fab6dce89cbfd30002b2f54f64f289d732d4627b65f277a2cd6ae4865"
+    },
+    {
+      "path": "src/rule_loader.cpp",
+      "sha256": "e4c63f1ced30bcf2ce3649cd83a7119dabc0828ae2bb57c9f4d285f33f024d34"
+    },
+    {
+      "path": "src/tcp_reassembler.cpp",
+      "sha256": "5e55c31b559116982d7d129ce4b852e4036898e0d82be459a96ea8bead85e72b"
+    },
+    {
+      "path": "src/verdict.cpp",
+      "sha256": "c67db4ec18c6cf8f8c36d2ab0e34558aa221d472053b4a4123ddee3eb4aaebea"
+    },
+    {
+      "path": "tests/CMakeLists.txt",
+      "sha256": "d04e6504f9f686aaadf0750fcb6a76faf59b37d2b896e9018e15e464533cbc72"
+    },
+    {
+      "path": "tests/check_cli.cmake",
+      "sha256": "07345861986aa1bc4628e67d03d1a73d71aacc3aa700635813c0eace831acc76"
+    },
+    {
+      "path": "tests/check_flow_cli.cmake",
+      "sha256": "2e1da62f99f74c18cbd6247075cce0901a16dd64869d762f10bb8ac244a1cfb7"
+    },
+    {
+      "path": "tests/check_inline_guard.py",
+      "sha256": "787c8a71b22490c9ccc0a13c8782b6fafb568032c3ba12b66b246fb4d83dd440"
+    },
+    {
+      "path": "tests/check_inline_process.py",
+      "sha256": "f64309f01a5931f570bd3253110b7f30a0fc13e80258d19d7a6f7fad55543579"
+    },
+    {
+      "path": "tests/check_jsonl_process.py",
+      "sha256": "04f42e3b1def81c4b17d9d2425689cbae24e37a45c2f78922adeee1c4a50370c"
+    },
+    {
+      "path": "tests/check_live_guard.py",
+      "sha256": "ab77f5cefdc74572bc9fcf9850c2581eb39595d9df900afcb4f6ad32c7c7409a"
+    },
+    {
+      "path": "tests/check_live_process.py",
+      "sha256": "a03ac3bf31d17f77a6692e6a42748d791582cb1f9b6d41d3fd62ee4a43a65b3e"
+    },
+    {
+      "path": "tests/check_pcap_cli.cmake",
+      "sha256": "ef6ce71a5010829b935e0127a719dc68e0afc172f526c8888ecc7672deeed8a1"
+    },
+    {
+      "path": "tests/fixture_writer.cpp",
+      "sha256": "861bad0dbb6e38769869933936f37fce871aefcb2b4c7e982f2ab62e7eb0e7fb"
+    },
+    {
+      "path": "tests/fixtures/flow_fixtures.hpp",
+      "sha256": "4c34476496a43be5a45f29c6fdd8bdf0651f055e8cfbd49d066711f33d7fdf73"
+    },
+    {
+      "path": "tests/fixtures/jsonl_fixtures.hpp",
+      "sha256": "e7164ab1639dfb040a376beff7c2b148caf60d9150e497767af9b210775fa74e"
+    },
+    {
+      "path": "tests/fixtures/packet_fixtures.hpp",
+      "sha256": "61aa7d3919fa7a5285ed242699c61d975ff22e0192b664233cd046f78f6263f4"
+    },
+    {
+      "path": "tests/fixtures/reassembly_fixtures.hpp",
+      "sha256": "fd3899ffef525011b2318bec5b4267a7dba3d89428822e9c5eb27745420b0705"
+    },
+    {
+      "path": "tests/fixtures/rule_fixtures.hpp",
+      "sha256": "e7552a454ac5ea5cf58cdebbca1d45093847a3e348bc76cc03114f0e67974336"
+    },
+    {
+      "path": "tests/pcap_fixture.hpp",
+      "sha256": "6eaf29b41cfe07dd9db89a94298c4485a6ce20e5974b56374841f16bf4e5019d"
+    },
+    {
+      "path": "tests/test_cli.cpp",
+      "sha256": "b29adccc6de2faf314388b9a3254f468073089a242417a2c6a7492e24167ed23"
+    },
+    {
+      "path": "tests/test_cli_flow.cpp",
+      "sha256": "96fb66270438af796b1db32c64e3f9f9f03dd58e7910eefda8fbd6ac58370386"
+    },
+    {
+      "path": "tests/test_cli_inline.cpp",
+      "sha256": "ee8fb166ae2eaf78f01b1f153c28a3266b5bf789c4bac846227cdf06045a6a65"
+    },
+    {
+      "path": "tests/test_cli_jsonl.cpp",
+      "sha256": "01f3e525cdd8e69b93c51a3867fdab334bb0dc7f97662d8244701ff383a7643f"
+    },
+    {
+      "path": "tests/test_cli_live.cpp",
+      "sha256": "92fd712c3d012f777a744119d29f40d25b32105e6b2c7a3d89f2dec999278bf4"
+    },
+    {
+      "path": "tests/test_cli_pcap.cpp",
+      "sha256": "ed2c67234f435f690c74c46865cce40f9abdad82892212cec9899db238c43c2d"
+    },
+    {
+      "path": "tests/test_cli_reassembly.cpp",
+      "sha256": "19dd1e6eba36c08abefec685fcfdd3239f6d6e630ca3b3e8a723ecb4458dde38"
+    },
+    {
+      "path": "tests/test_cli_rules.cpp",
+      "sha256": "f0a5e3bcfa031e7a7ffb084092a0ca635bbe0d61abed2bc253a68e5a08b8f4a8"
+    },
+    {
+      "path": "tests/test_engine.cpp",
+      "sha256": "f088182a3d979d77f28a455831ea47731a2890aadb7726574587e4fad80126a1"
+    },
+    {
+      "path": "tests/test_event_logger.cpp",
+      "sha256": "1c0b7f4f2fd6c4198101a2d353438f6e29ae2088942b28aeef53e373611e180c"
+    },
+    {
+      "path": "tests/test_event_publisher.cpp",
+      "sha256": "2b271c902e388769104d46db8bea7a76d9f55b40a3de83ddc619c8d7a52aee68"
+    },
+    {
+      "path": "tests/test_flow_table.cpp",
+      "sha256": "3f30fea713c3328be6d8206b1c047e304ef0a03aacaaaaaa0376c8ad69b4bb00"
+    },
+    {
+      "path": "tests/test_inline_core.cpp",
+      "sha256": "d96d04da09f06f797319abca5908716c766f86374b25c1dd95f88fcd8357c5db"
+    },
+    {
+      "path": "tests/test_inline_logging.cpp",
+      "sha256": "1aa4a3e807c9489d20ad1d6fb0d05bf4204cb98f523429aaaa6db1cf37daf3d8"
+    },
+    {
+      "path": "tests/test_live_metadata.cpp",
+      "sha256": "ab86c7a5956d253ae70065127004fc40e4282ee66c8eb713b9e5d717cabacab0"
+    },
+    {
+      "path": "tests/test_live_source.cpp",
+      "sha256": "f53a4c71ff1c03edaaa5bd7a56d3b1577969c8b05e83a767476912e4f793709c"
+    },
+    {
+      "path": "tests/test_nfqueue_config.cpp",
+      "sha256": "0badc48d3c440098b7d5bd01786a215c2b203eb33e17dbe1207aba5a41685a13"
+    },
+    {
+      "path": "tests/test_nfqueue_lifecycle.cpp",
+      "sha256": "3ca71584d636329cc0ef05f91ab14d17ea4cd22657ff4743a1a5178da75dc142"
+    },
+    {
+      "path": "tests/test_packet_parser.cpp",
+      "sha256": "577e55b8f1c3faf93b39ab70dac97577f705420ff5dd65ddf1cac9140bd703bc"
+    },
+    {
+      "path": "tests/test_pcap_source.cpp",
+      "sha256": "9d7be86d6876a1b1993ae1f3a71e46a46cc31e6692d5a2291780a224b5c93035"
+    },
+    {
+      "path": "tests/test_reassembly_lifecycle.cpp",
+      "sha256": "26930f1b51d9a54e43741908cd68bffa4b77d976053155be6eb4b2f92c61032e"
+    },
+    {
+      "path": "tests/test_reassembly_ranges.cpp",
+      "sha256": "30a707bb09b2caed4d9a9b0541c218b4b6cd862f08881ec1920f3f8b93953b9a"
+    },
+    {
+      "path": "tests/test_rule_engine.cpp",
+      "sha256": "1f2c786d1310945dc13dba0aa10aa100ca35434f1a02af7d0841fda51ae5291e"
+    },
+    {
+      "path": "tests/test_rule_loader.cpp",
+      "sha256": "b5e24f69adb85c07620b7b1f0288315105a97478f8e0aa1143b4916f5d162008"
+    },
+    {
+      "path": "tests/test_tcp_reassembler.cpp",
+      "sha256": "660e61176938e1bc6b45e65b5fdaf1380d49e6257b9170b9a1be447dbfc98e02"
+    }
+  ],
+  "document_hashes": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "7e4a13b55e78b2cfca9872bc8f4cac04d475dd84d3746fccc4dd81d21c00d5c2"
+    },
+    {
+      "path": "PROJECT_SPEC.md",
+      "sha256": "bf960a82a331d45a5b1dcf271bdffb31a2de36f8294a48259017646ec2d8a230"
+    },
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "sha256": "65c7dde0410bd75260e7e7d5fbced51d4b79788b10a51b9b342a4e6f7f86151a"
+    },
+    {
+      "path": "README.md",
+      "sha256": "ee73d3609381e8266e02a2f8db3599e104227602f520fc450b24080599724663"
+    },
+    {
+      "path": "docs/design-decisions.md",
+      "sha256": "b6a88c64f55f7ffc4a8cea82db651f420b0162831912220b34cb2c6c97d96721"
+    },
+    {
+      "path": "docs/known-limitations.md",
+      "sha256": "c1c743863a1c67d0ca0624aaadabf87dc85d390c348fb9ae4f54feaeccc19c6a"
+    },
+    {
+      "path": "docs/test-plan.md",
+      "sha256": "7e055a3364096ea33989c8f1119808c89a2833a41caa9805da5d454dbc9521ba"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-11-08-a7-design.md",
+      "sha256": "f961019d53c31e038a8f7d2bb8d7145c44b334bbba1247bc8e33011527f2816a"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-11-08-a7.md",
+      "sha256": "d712227b227461cbbd76ace3079fee008c59ecb368b77af701c751047c9a88d4"
+    }
+  ],
+  "fixture_hashes": [
+    {
+      "path": "build/tests/fixtures/empty.pcap",
+      "sha256": "acc530668c8bc60b2d229281130b1899bfc81d70fdada5c34b3236c628f739c8"
+    },
+    {
+      "path": "build/tests/fixtures/flow_bidirectional.pcap",
+      "sha256": "f55bf13e76176202c9bd71595da317b47ba1b7eb18d4e9bef66f5b1b5f6dc8b2"
+    },
+    {
+      "path": "build/tests/fixtures/flow_capacity.pcap",
+      "sha256": "bd31c3be76eb94882749bd99460f999953fcd4446c8064a1294e68887343639e"
+    },
+    {
+      "path": "build/tests/fixtures/flow_expired.pcap",
+      "sha256": "63cd54ebdddded3e822e14e7f43be92c9c619282b58ffcc4ec88c05080911234"
+    },
+    {
+      "path": "build/tests/fixtures/jsonl_pipeline.pcap",
+      "sha256": "70caf5fb4683cb8c8247c39d15d93b30f002136528d259c514ee6fb7069f3a44"
+    },
+    {
+      "path": "build/tests/fixtures/mixed.pcap",
+      "sha256": "dfdc6592eb5ea6aa3e89e4250b855bd8153d3f2d2a9078d97d196b6d66c3eb71"
+    },
+    {
+      "path": "build/tests/fixtures/normal.pcap",
+      "sha256": "c031fb5b17e32a171a24fef041657905db9930dcfd64b93df413a385a4fe1f4c"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_ambiguous_fin.pcap",
+      "sha256": "4e02e3ae2a674cd8bff79e200fcc5df804fa6b7027ab2b473b54b6e039805ea1"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_gap.pcap",
+      "sha256": "9d7f5a79c38bafab14d3f09dfdfb12d45c73f30286756e9b03b741b9eaab04ac"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_hello.pcap",
+      "sha256": "e1a951a2434ac1e09e8535ca8aa5223424e0a00f116876bb9b208d3ee70452e1"
+    },
+    {
+      "path": "build/tests/fixtures/reassembly_reset.pcap",
+      "sha256": "b7b98ea38e6cdf1e3df4cd4e3cd025565f37c2bb8e2ce350af3aff9c328c8a4d"
+    },
+    {
+      "path": "build/tests/fixtures/rules_packet.pcap",
+      "sha256": "0c9cf5d1fbd3a2f177f8e2db6b05e889af59402c99654e354be9e0e13cc98387"
+    },
+    {
+      "path": "build/tests/fixtures/rules_retransmit.pcap",
+      "sha256": "51f1602411e06c5e9d522245c08cec33a9887b14986605458b9f1553f89f7cde"
+    },
+    {
+      "path": "build/tests/fixtures/truncated.pcap",
+      "sha256": "250082334453a2ba5a56176a5c997df32e78b1e7af38592a4cddf983082ed2d5"
+    },
+    {
+      "path": "build/tests/fixtures/unsupported.pcap",
+      "sha256": "305777c56a3a26485811dc4a97b478ff7fe6aa038179f3957953166876b06d37"
+    }
+  ],
+  "binary_hashes": [
+    {
+      "path": "build/miniips",
+      "sha256": "aef59b5a605e44e86f77ef2e521a2f8c26ef30f06581308e38cf28bd252e66f2"
+    },
+    {
+      "path": "build-release/miniips",
+      "sha256": "1ee8607f94053d1327c016d4e4a05c2f0e47929b7f6b95daa070ec714bd746f4"
+    },
+    {
+      "path": "build-sanitize/miniips",
+      "sha256": "029cd72c7dd279e0135af35b755a3639c72273d149eebe7d3a9ca0855ddb0202"
+    }
+  ],
+  "tool_hashes": [
+    {
+      "path": "build-a7-work/tools/libnftables1_1.0.9-1ubuntu0.1_amd64.deb",
+      "sha256": "fcaee001747a6adaa0cd9337fef437b3aa7a7a6d5246b62fbd4784d3d6a5009e"
+    },
+    {
+      "path": "build-a7-work/tools/libnftnl11_1.2.6-2build1_amd64.deb",
+      "sha256": "e5bde5c9cbb95082700011f0b7ef2c0a41900b0a9fd7434f6e90448e2a7b4e50"
+    },
+    {
+      "path": "build-a7-work/tools/nftables_1.0.9-1ubuntu0.1_amd64.deb",
+      "sha256": "d648859fccde3c17b8b9b89993427564f91f394a39306db1f67bd5ea3ac42c6e"
+    },
+    {
+      "path": "build-a7-work/tools/root/usr/lib/x86_64-linux-gnu/libnftables.so.1.1.0",
+      "sha256": "992de9571a44b904f0f55626160bdd60b690227cbffb8b7f962b0950e22bead3"
+    },
+    {
+      "path": "build-a7-work/tools/root/usr/lib/x86_64-linux-gnu/libnftnl.so.11.6.0",
+      "sha256": "31de1bbd42e0976d6fbde5cc8b805036189506d092dd0964dc8547b2e2ad57e5"
+    },
+    {
+      "path": "build-a7-work/tools/root/usr/sbin/nft",
+      "sha256": "3f1c21553e62716ef1abfcf31f51ff94eb73ff4234a6653bac754a42f936d1c7"
+    }
+  ],
+  "evidence_hashes": [
+    {
+      "path": "build-a7-work/collect_evidence.py",
+      "sha256": "31dc06df3b1b1cfa83bfc1496f2cc469758b52c0d6c7b55d7b471925e7af67ed"
+    },
+    {
+      "path": "build-a7-work/debug-build.log",
+      "sha256": "ceef9996e528065d0f20731512acefb0c7949be7bc9ed12b6106170bae914d5b"
+    },
+    {
+      "path": "build-a7-work/debug-tests.log",
+      "sha256": "0c5e543b1f9f9d3af5023369f17908f4a9e2b1c9a9ae0e69ccd93fb0b6e860f3"
+    },
+    {
+      "path": "build-a7-work/debug-tests.xml",
+      "sha256": "294d23bf4af278880c080cf75512e096e8e5576bc845f6a884a8a239979f1ae6"
+    },
+    {
+      "path": "build-a7-work/environment-probe.log",
+      "sha256": "e937a59038e306cc13289718296e58d6b5c06bcaa7d1b4b04613cb2d11b29f07"
+    },
+    {
+      "path": "build-a7-work/final-review.md",
+      "sha256": "49ab004e2ef227cce5a1e175fbaffdd9c648b5563ab758f27eda5a04f3b48532"
+    },
+    {
+      "path": "build-a7-work/format.log",
+      "sha256": "2a2dfb33385f763495a7752721d7f4bcf54c5fe8cfbf144c88c3f1601c5a6653"
+    },
+    {
+      "path": "build-a7-work/inline-debug.log",
+      "sha256": "95bcfc87aa9f7f37078c9eebc28caaab14f6c1c190269c730a1830bfc2f595df"
+    },
+    {
+      "path": "build-a7-work/inline-exception-detail.log",
+      "sha256": "c4418122b8ff6482a0ed60d7ff9cc8772ca56a54a05a9281d596a8a8654f31d3"
+    },
+    {
+      "path": "build-a7-work/inline-exception-red.log",
+      "sha256": "2761122a0ad9f87f18f260ac1cae61e6e1abda049227611ca4613fc7b6e5888e"
+    },
+    {
+      "path": "build-a7-work/inline-guard.log",
+      "sha256": "80cac8a4b7fa2d37c9830b1badf00943b5545f1fab4db039b712f84dd17535c4"
+    },
+    {
+      "path": "build-a7-work/inline-release.log",
+      "sha256": "95bcfc87aa9f7f37078c9eebc28caaab14f6c1c190269c730a1830bfc2f595df"
+    },
+    {
+      "path": "build-a7-work/inline-sample.jsonl",
+      "sha256": "2e093092fd613096b3a9e2764e59d4f2a1256e4babe6a1c698bb121cfffa3b3d"
+    },
+    {
+      "path": "build-a7-work/inline-sanitize.log",
+      "sha256": "95bcfc87aa9f7f37078c9eebc28caaab14f6c1c190269c730a1830bfc2f595df"
+    },
+    {
+      "path": "build-a7-work/live-debug.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a7-work/live-release.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a7-work/live-sanitize.log",
+      "sha256": "c32953d5e26364af2610ee4aa89aa02b255fb92f09289ee1c3a624c50811fa49"
+    },
+    {
+      "path": "build-a7-work/probe_environment.py",
+      "sha256": "c1e8802573d08315f15cf9fee2e991a7d25e1958b66c07e12a0690fd615bfd42"
+    },
+    {
+      "path": "build-a7-work/progress.md",
+      "sha256": "a9b821d85a830ffc6d8ca2eccc41d14c2c3a4474f0c22dd848a54ecf513f1cdb"
+    },
+    {
+      "path": "build-a7-work/release-build.log",
+      "sha256": "39d93d8ff899ab32c8309ed04a476bbd5815b1fdc38e98b860efd92684bb2e32"
+    },
+    {
+      "path": "build-a7-work/release-tests.log",
+      "sha256": "9c497254be9d36c6e4764051f2c2473e79fbf321b6ad3a841bec1be9e9a304ed"
+    },
+    {
+      "path": "build-a7-work/release-tests.xml",
+      "sha256": "ead6d786b53bb0fd9b47a26db9b5b35daa84340d17b64368fc4a05db7b548642"
+    },
+    {
+      "path": "build-a7-work/review-fix-build.log",
+      "sha256": "577fcf9e391d5133c3913b85617729d8a3cc57b6c4fd25fdee54edefacfccf51"
+    },
+    {
+      "path": "build-a7-work/review-fix-green.log",
+      "sha256": "79af14eaf534ce6a2ac226ba542d33c1cad8413d62b32f44422a84654d591ffc"
+    },
+    {
+      "path": "build-a7-work/review-fix-red.log",
+      "sha256": "dd600587597b633cd5556a3ce7b05e6e2a24fbda495ba2b557df5169f473744b"
+    },
+    {
+      "path": "build-a7-work/review-resolution.md",
+      "sha256": "fb1e72733fb627429e19da65797c53f5ff734758c07ce1bdf3a2f6702e3afe9c"
+    },
+    {
+      "path": "build-a7-work/run-profile.sh",
+      "sha256": "554fd80407f559d4ba6b04a8d39697704fb872b22ce9dbc98991de27b298fa3d"
+    },
+    {
+      "path": "build-a7-work/sanitize-build.log",
+      "sha256": "ceef9996e528065d0f20731512acefb0c7949be7bc9ed12b6106170bae914d5b"
+    },
+    {
+      "path": "build-a7-work/sanitize-tests.log",
+      "sha256": "b7ee93e5fe54b5ef85470b51f43111b0ef3441e5f38da1e3107beff7b69b22c8"
+    },
+    {
+      "path": "build-a7-work/sanitize-tests.xml",
+      "sha256": "48972eded826a1f7e19fe51fb1f5e8c46f6cda488a625823f1f2f0040fe0ecba"
+    },
+    {
+      "path": "build-a7-work/task1-build.log",
+      "sha256": "4b2f7b34ddddd005a806d01d7300a4582f41f87269a2e8feb3dd625fede54c44"
+    },
+    {
+      "path": "build-a7-work/task1-red.log",
+      "sha256": "b00d74425766c984eb9fdc577d6ba737ae0728950eac6fe1fa32479321e83615"
+    },
+    {
+      "path": "build-a7-work/task1-tests.log",
+      "sha256": "459b6f92ce01a1d7285729a700519c004a9104bf9964127c71ba56a54758a373"
+    },
+    {
+      "path": "build-a7-work/task2-build.log",
+      "sha256": "1e7b7b4a7045ec5a0ba928ac8acf12549e3e89ab2be813d65fb0986a2f0fe1d2"
+    },
+    {
+      "path": "build-a7-work/task2-red.log",
+      "sha256": "61fdcee9f575d03431b380090fb77c62cf6626ef9d2f587141572e55bdf10c90"
+    },
+    {
+      "path": "build-a7-work/task2-tests.log",
+      "sha256": "f2c741bb22f952d6b2a5216eb60fedb714b3b11dfcb7e2e0b52fa3e87730f5d0"
+    },
+    {
+      "path": "build-a7-work/task3-build.log",
+      "sha256": "00d5f94dffd407e0468ca21788ef77e645b085ac8772f7702c24d29cfa24c98b"
+    },
+    {
+      "path": "build-a7-work/task3-cli-red-stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "build-a7-work/task3-cli-red.log",
+      "sha256": "be9f977b8d514ec3b823863499902c200af17bbe35fec362780b12c82baf693a"
+    },
+    {
+      "path": "build-a7-work/task3-source-red.log",
+      "sha256": "20cc496fb6a8503bb4f36f4f84cdaf3a9b329596c095158e01f16e174b676dec"
+    },
+    {
+      "path": "build-a7-work/task3-tests.log",
+      "sha256": "56fa4f49d2e79fe85644cf531d3fbec6976061893be63eab11e872f70e9ed75e"
+    },
+    {
+      "path": "build-a7-work/tools-download.log",
+      "sha256": "54cc55968e372b860130a9da297cc8d670ec984cf572a8e006c4779c02d31aca"
+    },
+    {
+      "path": "build-a7-work/tools-version.log",
+      "sha256": "89995fd0c92187974133511999d65ba41513837cf75e37d0713b14fd3ada7e9d"
+    }
+  ]
+}

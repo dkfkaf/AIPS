@@ -1,5 +1,20 @@
 # 설계 결정
 
+## A7 NFQUEUE — 2026-11-08
+
+사용자 A7 요청에 따라 [설계](superpowers/specs/2026-11-08-a7-design.md)와 [계획](superpowers/plans/2026-11-08-a7.md)을 실행한다. 독립 설계 검토의 예산 구분 질문을 해결했다. fatal은 processing_error/예외이며, Flow/TCP 제한은 기존 제한 검사 의미를 유지한다. 개별 기본값을 별도 사용자 승인으로 주장하지 않는다.
+
+- PacketLayer::Ipv4에서 Ethernet 없이 같은 IPv4/TCP/UDP 검사를 재사용한다. NFQUEUE callback 수신 system_clock을 receive 시각으로 명시한다.
+- 무할당 VerdictGuard는 유효 ID마다 한 번만 sender를 호출한다. 미제출 범위 종료는 fallback Drop, 전송 실패도 재시도하지 않는다. source의 C callback은 모든 C++ 예외를 잡으며 이미 받은 batch의 나머지도 guard한다.
+- nfq handle/queue는 RAII로 소유하고 nonblocking/100ms poll, COPY_PACKET65535, queue1024/fail-open off를 사용한다. 다른 listener를 해제하는 protocol unbind를 호출하지 않는다. 사용 중인 legacy API가 upstream 문서에서 deprecated인 한계는 남기며 libmnl 개발 패키지와 직접 netlink 구현을 추가하지 않았다.
+- shared CLI는 inline에 --queue-num과 값 없는 --enable-inline을 요구한다. 기존 PCAP/live 인자·검사·단계를 유지하고, main은 플래그 위치와 무관하게 신호/출력 설정을 찾는다. 바이너리는 방화벽 명령을 실행하지 않는다.
+- verdict 후 owned receipt를 발행한다. inline에서는 기존 시뮬레이션 verdict를 생략하고 별도 실제 receipt 행을 만든다. 성공한 inline verdict에만 enforced=true를 허용한다. 논리적 룰 Drop/실제 제출 Drop/오류 fallback/시뮬레이션 수를 구분한다.
+- source.close는 run 이후 callback 참조의 수명을 보호하기 위해 inspector/After를 해제한다. close 중 받은 ID에도 fallback Drop을 시도하고 최종 카운터에 반영하지만 개별 receipt 로그가 없을 수 있다. /dev/full 실험의9 ACCEPT+1종료 Drop/10시도가 실제9수신과 일치함을 확인했고 잘못된 테스트의 “종료 Drop0” 가정을 수정했다.
+- 종료 callback의 fatal 상태는 최초/반복 close 결과에도 유지한다. 성공 fallback Drop은 허용하지만 전송 실패/ID 누락은 CLI run_complete=false·error·종료1로 반영한다. 실제 큐를 열지 않는 ld --wrap 오류 주입4개로 수정 전3실패/수정 후4통과를 확인했다. 생성자 실패 정리에서도 callback 상태가 자원보다 오래 살도록 멤버 순서를 정했다.
+- nftables는 apt download/dpkg-deb extract로 ignored 프로젝트 폴더에만 풀었다. 서비스/전역 설치를 하지 않는다. 실제 규칙은 안전 검사를 통과한 임시 netns의 전용 table/시험 포트에만 적용한다. host 규칙·인터페이스를 변경하지 않고 own table 제거 뒤 통신 복구를 확인한다.
+
+A8·AI 및 자동 commit/push는 하지 않는다. IPS 완료 뒤 사용자 자체 테스트·AI 착수 지시 조건을 유지한다.
+
 ## A6 라이브 IDS — 2026-11-08
 
 사용자의 A6 요청·중단 작업 재개 지시에 따라 [설계](superpowers/specs/2026-11-08-a6-design.md)와 [계획](superpowers/plans/2026-11-08-a6.md)을 실행한다. 독립 설계 검토는 중요한 미정 사항 없음으로 끝났다. 아래 기본값은 작성자가 기존 단일 처리 구조에 맞춰 선택한 것이며 개별 사용자 승인으로 주장하지 않는다.

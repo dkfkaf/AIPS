@@ -4,6 +4,7 @@
 
 #include "miniips/engine.hpp"
 #include "miniips/event_logger.hpp"
+#include "miniips/verdict.hpp"
 
 namespace miniips {
 struct RunPublication {
@@ -12,6 +13,8 @@ struct RunPublication {
     std::optional<CaptureStats> capture;
     std::string stop_reason;
     bool run_complete{};
+    std::uint32_t queue_num{};
+    std::optional<QueueStats> queue;
 };
 // Synchronous publication of one owned result. Failures latch in the logger;
 // neither publication nor a failed sink changes any Engine decision.
@@ -19,6 +22,8 @@ void publish_packet(EventLogger& logger, const PacketResult& result,
                     const RunPublication& run = {}) noexcept;
 void publish_finish(EventLogger& logger, const FinishResult& result,
                     const RunPublication& run = {}) noexcept;
+void publish_inline_verdict(EventLogger& logger, const PacketResult* result,
+                            const InlineReceipt& receipt, const RunPublication& run) noexcept;
 struct ErrorInfo {
     std::string_view domain;
     std::string_view reason;

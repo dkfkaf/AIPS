@@ -1,5 +1,19 @@
 # 알려진 한계
 
+## A7 적용 한계 — 2026-11-08
+
+- 실제 허용/차단의 증거는 임시 격리망의 선택된 IPv4 UDP 트래픽과 룰에 한정한다. 모든 TCP 공격/IPv6/fragment/VLAN/암호화/OS 정규화를 처리하는 상용 IPS가 아니다. 실제 TCP stream 차단 일반화·처리량/지연·포화/강제 유실 실험은 미실행이다.
+- --enable-inline과 root/CAP_NET_ADMIN이 필요하다. 바이너리는 방화벽을 바꾸지 않지만 기존 운영망 queue에 붙이면 실제 동작에 영향을 줄 수 있다. 예시는 격리 환경에서만 사용한다.
+- 미지원/파싱 실패는 ACCEPT하므로 미검사 트래픽이 통과할 수 있다. processing_error/예외의 fallback DROP은 정상 트래픽도 막을 수 있다. Flow/TCP 제한 경고를 완전한 검사로 해석하지 않는다.
+- nft bypass/queue fail-open을 켜지 않은 시험 정책에서는 listener 부재/종료가 차단으로 이어진다. 큐/프로세스/커널 장애의 fail-open을 보장하지 않는다. 정상 중지 때도 kernel pending을 모두 처리한다고 주장하지 않는다.
+- “한 번”은 유효 callback ID에 대한 verdict 시도다. ID 손상·수신 손실·전송 실패·프로세스 crash까지 전역 exactly-once 성공을 보장할 수 없다. API 제출 성공이 후속 모든 체인의 최종 전달 보증은 아니며 수신기 관측과 구분한다.
+- close는 run-scope callback 수명을 보호하기 위해 After를 해제한다. close 중 callback의 fallback Drop은 최종 카운터에 포함해도 개별 receipt가 없을 수 있다. final actual Drop 수와 개별 Drop 줄 수가 반드시 같지는 않다.
+- 종료 중 판정 실패/ID 누락은 반복 close와 CLI의 오류 결과에 반영한다. 실제 큐를 열지 않는 링크 시점 오류 주입으로 성공 fallback·전송 실패·ID 누락·CLI 종료 상태를 검사했다. 모든 커널 장애를 주입한 결과는 아니다.
+- inline timestamp는 사용자 공간 수신 시각이다. 커널 최초 도착 시각과 차이가 있으며 PCAP/live capture 시각과 의미가 다르다. 원본 길이는 legacy API가 제공한 복사 길이를 사용하고 IP total length로 불완전을 확인한다. 대형/GSO/복사 한계 입력을 검사 완료로 주장하지 않는다.
+- libnetfilter_queue handle API는 upstream의 legacy/deprecated 경로다. 지원되는 설치1.0.5 API만 사용하고 신규 libmnl API와 섞지 않는다. 전송 실패/ENOBUFS/oversize는 오류 종료하며 실제 모든 하위 오류 주입은 미실행이다.
+- A7 리뷰 경미 보류1건: recvmsg의 ENOBUFS나 ppoll의 POLLERR 경로는 receive_errors 증가·오류 종료하지만 overflow_errors 원인 분류가 빠질 수 있다. 강제 overflow 진단 실험과 분류 개선은 이번 범위에 포함하지 않았다.
+- 동기 로그·human 출력이 막힐 때의 시간 상한과 fsync·OOM 정리는 보장하지 않는다. 로그 오류는 verdict 후 처리하며 이후 판정을 계속하지만 human 출력 예외는 중단한다. 이전 A5/A6 경미 보류도 계속 적용한다.
+
 ## A6 적용 한계 — 2026-11-08
 
 - Linux Ethernet/DLT_EN10MB 수동 IDS다. 모든 룰 Drop은 시뮬레이션이고 실제 네트워크 차단은0이다. NFQUEUE/A7·AI는 구현하지 않았다. 기존 IPv6/fragment/VLAN·TCP 제한도 유지한다.

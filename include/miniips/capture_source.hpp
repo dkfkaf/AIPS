@@ -10,9 +10,12 @@
 
 namespace miniips {
 
-enum class CaptureMode : std::uint8_t { Pcap, Live };
+enum class CaptureMode : std::uint8_t { Pcap, Live, Inline };
 constexpr std::string_view capture_mode_name(CaptureMode mode) noexcept {
-    return mode == CaptureMode::Pcap ? "pcap" : mode == CaptureMode::Live ? "live" : "unknown";
+    return mode == CaptureMode::Pcap     ? "pcap"
+           : mode == CaptureMode::Live   ? "live"
+           : mode == CaptureMode::Inline ? "inline"
+                                         : "unknown";
 }
 enum class LiveStopReason : std::uint8_t { Requested, Sigint, Sigterm, PacketLimit };
 constexpr std::string_view live_stop_name(LiveStopReason reason) noexcept {

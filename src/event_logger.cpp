@@ -50,6 +50,9 @@ Json document(const Event& event, std::uint64_t id) {
     const auto action = event_action_name(event.action);
     const auto& context = event.context;
     if (type == "unknown" || action == "unknown" || capture_mode_name(context.mode) == "unknown" ||
+        (context.enforced &&
+         (context.mode != CaptureMode::Inline || event.type != EventType::Verdict ||
+          (event.action != EventAction::Allow && event.action != EventAction::Drop))) ||
         !event.fields.is_object() || (context.packet_number && *context.packet_number == 0) ||
         (context.flow_id && *context.flow_id == 0) || (event.sid && *event.sid == 0)) {
         throw std::invalid_argument("Invalid event metadata.");
@@ -70,7 +73,7 @@ Json document(const Event& event, std::uint64_t id) {
         {"protocol", nullptr},
         {"direction", nullptr},
         {"mode", capture_mode_name(context.mode)},
-        {"enforced", false},
+        {"enforced", context.enforced},
         {"action", action},
         {"sid", event.sid ? Json(*event.sid) : Json(nullptr)},
         {"message", event.message.substr(0, 4096)},
@@ -78,7 +81,9 @@ Json document(const Event& event, std::uint64_t id) {
     if (context.captured_at) {
         row["timestamp_us"] = context.captured_at->count();
         row["timestamp"] = timestamp(*context.captured_at);
-        row["timestamp_status"] = row["timestamp"].is_null() ? "out_of_range" : "capture";
+        row["timestamp_status"] = row["timestamp"].is_null()            ? "out_of_range"
+                                  : context.mode == CaptureMode::Inline ? "receive"
+                                                                        : "capture";
     }
     if (context.source) {
         row["src_ip"] = ipv4(context.source->ip);

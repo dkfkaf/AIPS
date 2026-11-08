@@ -58,9 +58,15 @@ target_link_libraries(miniips_rules PUBLIC miniips_reassembly nlohmann_json::nlo
 add_library(miniips_engine STATIC src/engine.cpp)
 target_link_libraries(miniips_engine PUBLIC miniips_packet miniips_rules)
 
+add_library(miniips_verdict STATIC src/verdict.cpp)
+target_link_libraries(miniips_verdict PUBLIC miniips_engine)
+
+add_library(miniips_nfqueue STATIC src/nfqueue_source.cpp)
+target_link_libraries(miniips_nfqueue PUBLIC miniips_verdict PRIVATE PkgConfig::NFQUEUE)
+
 add_library(miniips_publisher STATIC src/event_publisher.cpp)
-target_link_libraries(miniips_publisher PUBLIC miniips_engine miniips_logging)
-target_link_libraries(miniips_cli PRIVATE miniips_publisher)
+target_link_libraries(miniips_publisher PUBLIC miniips_engine miniips_logging miniips_verdict)
+target_link_libraries(miniips_cli PRIVATE miniips_publisher miniips_nfqueue)
 target_include_directories(miniips_cli PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_compile_definitions(miniips_cli PRIVATE MINIIPS_VERSION="${PROJECT_VERSION}")
 
@@ -100,6 +106,11 @@ if(MINIIPS_CLANG_FORMAT)
             tests/test_event_logger.cpp
             include/miniips/engine.hpp src/engine.cpp tests/test_engine.cpp
             include/miniips/live_pcap_source.hpp src/live_pcap_source.cpp src/pcap_timestamp.hpp
+            include/miniips/verdict.hpp src/verdict.cpp tests/test_inline_core.cpp
+            tests/test_inline_logging.cpp
+            include/miniips/nfqueue_source.hpp src/nfqueue_source.cpp
+            tests/test_cli_inline.cpp tests/test_nfqueue_config.cpp
+            tests/test_nfqueue_lifecycle.cpp
             tests/test_live_source.cpp tests/test_live_metadata.cpp tests/test_cli_live.cpp
             include/miniips/event_publisher.hpp src/event_publisher.cpp tests/test_event_publisher.cpp
             tests/test_cli_jsonl.cpp

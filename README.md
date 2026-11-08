@@ -2,11 +2,47 @@
 
 C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드는 교육·연구용 프로젝트다. Suricata에서 영감을 얻은 독립 구현이다.
 
-**현재 상태(2026-11-08): A0~A6 검증 완료.** 명시한 Linux 인터페이스의 라이브 수집을 공통 Engine·JSONL에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 각각238/238, 실패·skip0과 포맷 검사를 통과했고 각 빌드의 격리망 실제11시나리오도 통과했다. 독립 리뷰 중요1건(최적화된 Python의 검증기 격리 검사 우회)을 안전한 회귀로 수정했고 경미3건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A6 실행 증거](docs/a6-validation-2026-11-08.json)를 참고한다. 실제 IPS 차단·사용자 자체 테스트·AI는 이후 단계다.
+**현재 상태(2026-11-08): A0~A7 검증 완료.** NFQUEUE를 공통 Engine·JSONL에 연결했고 격리 실험의4패킷 중3개 실제 허용·1개 실제 차단을 확인했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 각각257/257, 실패·skip0과 포맷 검사를 통과했고 각 빌드의 실제 NFQUEUE14개·라이브 IDS11개 시나리오도 통과했다. 독립 리뷰 중요1건(종료 callback 실패의 정상 완료 보고)을 오류 주입 회귀로 수정했다. 경미1건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A7 실행 증거](docs/a7-validation-2026-11-08.json)를 참고한다. 다음은 사용자 지시 후 A8 종합 검증·문서화이며 사용자 자체 테스트와 AI 착수 지시를 기다린다.
 
 앞서 발생했던 WSL 설치 오류와 도구 부재는 [환경 복구 전 기록](docs/a0-validation-2026-11-05.json)에, 복구 후 실제 명령과 결과는 [Linux 실행 기록](docs/a0-validation-2026-11-05-linux.json)에 보관한다.
 
 작업 규칙은 [AGENTS.md](AGENTS.md), 기능 계약은 [PROJECT_SPEC.md](PROJECT_SPEC.md), 개발 단계는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 코드 규칙은 [CODING_STYLE.md](CODING_STYLE.md)를 따른다.
+
+## A7 NFQUEUE Inline IPS — 2026-11-08
+
+명시적 inline 모드에서만 룰 결과를 실제 NF_ACCEPT/NF_DROP으로 제출한다. 세 빌드의257개 일반 테스트와 격리14시나리오를 확인한 [A7 실행 증거](docs/a7-validation-2026-11-08.json)에 완료 판정을 기록했다. 바이너리는 방화벽 규칙을 수정하지 않는다.
+
+```bash
+# 이미 구성한 격리 Linux 실험망 안에서만 실행
+./build/miniips --mode inline --queue-num 42420 --enable-inline \
+  --rules rules/a7-demo.json --log -
+```
+
+- --queue-num은0~65535, --enable-inline은 값 없는 필수 확인 옵션이다. 둘 중 하나라도 빠지면 큐를 열지 않는다. --input/--interface는 inline에서 금지한다. --packet-count는 이미 수신한 batch 경계에서 정지할 수 있다.
+- 파싱 실패/미지원 입력은 ACCEPT하되 검사 성공으로 기록하지 않는다. 룰 processing_error/처리 예외는 fallback DROP 뒤 중단한다. Flow/TCP 깊이·용량 제한은 기존 제한된 검사 결과와 경고를 유지한다. 모든 상황을 검사·차단하는 IPS가 아니다.
+- OS verdict 제출을 로그보다 먼저 한다. 성공 제출 verdict 행만 mode=inline/enforced=true다. alert/flow/stats는 적용 행위가 아니므로false이며, 전송 실패도false다. 실제 수신 성공의 주장은 격리 시험으로 확인한 트래픽에 한정한다.
+- inline의 시각은 callback 수신 시각(timestamp_status=receive)이다. actual_drop_packets/actual_accept_packets는 성공한 제출 수, logical_rule_drop_packets는 룰 판단, fallback_drop_packets는 오류/종료 정책의 Drop이다. simulated_drop_packets는inline에서0이다.
+- 시험 규칙은 bypass를 쓰지 않고 큐 fail-open flag도 켜지 않는다. listener 부재·종료 시 해당 queued 트래픽은 차단된다. 미수신/유실/종료 중 커널 처리까지 애플리케이션 exactly-once 성공으로 주장하지 않는다. 동기 출력 지연·프로세스 crash·큐 포화의 한계를 확인해야 한다.
+
+실제 검증은 임시 익명 network namespace에서만 자체 table과 loopback UDP 시험 포트를 만든다. 정상/Pass/Alert의 실제 도착, BLOCKME의 미도착, ICMP 미지원 ACCEPT, 로그 장애 뒤 판정 유지, 출력 예외, 시작/중지·권한/중복 바인딩과 정리를 검사한다. nft 경로를 명시하며 호스트 ruleset을 flush하지 않는다.
+
+```bash
+export MINIIPS_A7_HOST_NETNS=$(readlink /proc/self/ns/net)
+unshare --net -- python3 tests/check_inline_process.py \
+  build/miniips rules/a7-demo.json /usr/sbin/nft
+```
+
+검증 환경에 nft가 없으면 시스템 서비스를 설치하는 대신 실행 파일만 프로젝트에 풀 수 있다. CMake는 자동 다운로드하지 않는다. 이 준비는 패키지의 설치/시작 스크립트를 실행하지 않는다.
+
+```bash
+mkdir -p build-a7-work/tools
+(cd build-a7-work/tools && apt-get download nftables libnftables1 libnftnl11 && \
+  for package in ./*.deb; do dpkg-deb --extract "$package" root; done)
+export LD_LIBRARY_PATH="$PWD/build-a7-work/tools/root/usr/lib/x86_64-linux-gnu"
+export MINIIPS_A7_HOST_NETNS=$(readlink /proc/self/ns/net)
+unshare --net -- python3 tests/check_inline_process.py build/miniips rules/a7-demo.json \
+  build-a7-work/tools/root/usr/sbin/nft
+```
 
 ## A6 라이브 IDS — 2026-11-08
 
@@ -55,7 +91,7 @@ unshare --net -- python3 tests/check_live_process.py build/miniips build/tests/f
 - 예시의 논리적 신규 탐지2·매치 emitted3(Pass 포함)·시뮬레이션 Drop3은 서로 다른 집계다. 재전송/상충 재전송의 Drop은 유지되지만 alert가 중복 발행되지는 않는다. 실제 차단은0이다.
 - JSON stats는 생성 시점 상태다. 이후 flush/close까지 확인한 최종 결과는 stderr `logger_summary ... log_complete=1/0`와 종료 코드에 있다. JSON에 미래 성공을 단정하는 log_complete를 넣지 않는다.
 - 반환 코드0은 EOF와 출력 완료,1은 설정/입력/처리/출력 실패,2는 사용법 오류다. 코드0이라도 skipped/rejected/incomplete가 있을 수 있다. 동기 I/O 지연·fsync 내구성·치명적 OOM의 최종 로그는 보장하지 않는다.
-- 라이브 수집과 실제 Inline은 후속 단계다. IPS A0~A8 완성 뒤 사용자가 자체 테스트하고 AI 착수를 지시하기 전에는 AI 개발을 시작하지 않는다.
+- 라이브 수집과 실제 Inline 실행은 위 A6/A7 안내를 따른다. IPS A0~A8 완성 뒤 사용자가 자체 테스트하고 AI 착수를 지시하기 전에는 AI 개발을 시작하지 않는다.
 
 ## A4 JSON 룰 엔진 — 2026-11-07
 
@@ -145,12 +181,12 @@ pcap_summary packets=2 parsed=2 skipped=0
 ./build/miniips --mode pcap --input /path/to/capture.pcap
 ```
 
-옵션 순서는 바꿀 수 있다. PCAP에는 `--mode pcap --input PATH`, live에는 `--mode live --interface NAME`이 필요하다. --rules/--log는 선택 옵션이며 실제 inline 모드는 후속 단계다.
+옵션 순서는 바꿀 수 있다. PCAP에는 `--mode pcap --input PATH`, live에는 `--mode live --interface NAME`, inline에는 `--mode inline --queue-num N --enable-inline`이 필요하다. --rules/--log는 선택 옵션이다. 실제 inline은 격리 실험망에서만 실행한다.
 
 | 종료 코드 | 의미 |
 | --- | --- |
-| 0 | 도움말·버전 출력 또는 파일을 EOF까지 분석 완료. skipped·rejected·재조립 불완전 사유가 없다는 뜻은 아니다. |
-| 1 | 파일 열기·읽기·미지원 링크·타임스탬프·출력 오류 |
+| 0 | 도움말·버전 출력, PCAP EOF 또는 live/inline의 정상 정지. skipped·rejected·재조립 불완전 사유가 없다는 뜻은 아니다. |
+| 1 | 입력·수집·처리·출력 오류 또는 NFQUEUE 바인딩·판정·종료 실패 |
 | 2 | 필수 인자 누락·알 수 없는 옵션·중복 옵션 등 사용법 오류 |
 
 개별 패킷의 손상·미지원 입력은 stderr에 `parse_error packet=N reason=...`를 출력하고 다음 레코드를 읽는다. PCAP 컨테이너가 손상되어 더 읽을 수 없으면 `capture_error:`와 함께 실패한다. 이 출력은 A5의 JSONL 이벤트 스키마가 아니다.
@@ -277,4 +313,4 @@ ctest --test-dir build-sanitize --output-on-failure --no-tests=error
 - [A2 실행 결과](docs/a2-validation-2026-11-06.json)
 - [고정 테스트 바이트 설명](tests/fixtures/README.md)
 
-A0~A4는 인수 검증을 완료했다. 다음 A5 JSONL 로그·파이프라인 통합은 별도 사용자 지시 후 진행한다. A8까지 IPS를 먼저 완성하고 사용자 자체 테스트 뒤 AI 착수 지시를 기다린다.
+단계별 인수 검증 상태와 실행 증거는 위 현재 상태 및 테스트 계획을 따른다. A8까지 IPS를 먼저 완성하고 사용자 자체 테스트 뒤 AI 착수 지시를 기다린다.

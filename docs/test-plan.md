@@ -1,5 +1,21 @@
 # 테스트 계획과 실제 검증
 
+## A7 최종 판정 — 2026-11-08
+
+**완료.** [설계](superpowers/specs/2026-11-08-a7-design.md)와 [계획](superpowers/plans/2026-11-08-a7.md)에 따라 NFQUEUE source/verdict adapter·L3 파서·실제 receipt 발행을 구현했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 동일257개 각각 전부 통과, 실패·disabled·skip0, 포맷 통과. 각 구성의 실제 격리 NFQUEUE14개와 기존 live11개 시나리오도 모두 통과했다. [A7 실행 증거](a7-validation-2026-11-08.json)에 명령·JUnit·입력/도구/바이너리/문서/실행 증거 해시를 기록했다.
+
+- 기존238개+신규19개=일반 CTest257개: inline core6, 로그5, CLI2, 큐 구성1, 격리 검증기 안전 회귀1(내부4시나리오), 종료 callback 오류 주입4. unit의 valid queue를 실제 호스트에서 열지 않는다. 오류 주입은 실제 source/CLI의 NFQUEUE 외부 호출만 ld --wrap으로 대체한다.
+- 초기 새 API/header 부재는 컴파일 RED다. Task1244/244, Task2249/249, Task3252/252를 단계별 확인하고 안전 회귀를 추가했다.
+- 실제14시나리오는 별도 익명 netns에서 수행한다: no listener 차단, UDP NORMAL/Pass/Alert 전달·Drop 미도착, 종료 후 차단, idle SIGINT/TERM/플래그 선행, 기존 listener 보존한 중복 바인딩 거부, 미지원 ICMP request/reply ACCEPT, 닫힌 stdout/크기 제한 stdout·파일 뒤 후속 실제판정 유지, 새 파일600/기존 보존, /dev/full After 예외, 권한 거부, own rule 삭제 후 통신 복구.
+- /dev/full 시점에 이미 받은 종료 패킷은 fallback Drop이므로 “모두 ACCEPT/Drop0”을 가정하지 않는다. 상세 실험 callbacks10=attempts10=accepted9+dropped1, 실제 수신9를 기록했고 counter/receipt 중복 여부를 검증한다.
+- nft 도구는 로컬 추출본이며 서비스/호스트 방화벽을 변경하지 않았다. 패키지·실행 파일 해시와 실제 시험 명령을 보관한다. 실제 TCP 차단·성능/포화·모든 syscall 오류 주입은 미실행이다.
+
+표준 격리 UDP 시험은 callbacks/valid_ids/attempts4, 성공 ACCEPT3/DROP1/실패0이며 수신기는 NORMAL·SAFE·NOTICE만 받았다. 실제 JSONL 표본9줄의 verdict4개만 enforced=true, logical_rule_drop_packets1/simulated_drop_packets0이며 정상 packet_limit 종료다. ICMP request/reply는 파싱 미지원이지만 각각 실제 ACCEPT 제출과 echo 응답을 확인했다.
+
+독립 최종 리뷰1회는 Critical0/Important1/Minor2였다. 정상 run 이후 종료 callback의 실패가 close 성공/CLI 완료로 보고되는 문제를 안전한 오류 주입으로 재현했다(수정 전4개 중3실패). fatal을 반복 close 결과에도 유지해4개 전부 통과했고 전송 재시도는 하지 않는다. 생성자 실패 정리의 callback 상태 수명은 멤버 순서로 보완했으며 이 정적 보완을 런타임 RED로 주장하지 않는다. README의 상태 충돌은 예정된 문서 정리에서 고쳤고 수신 overflow 원인 통계 경미1건은 보류했다. 재리뷰는 하지 않았다.
+
+A6 소스69개 중58개 해시를 보존하고11개만 계획대로 변경했다. 신규12개를 포함한81개 소스/테스트 해시를 저장했다. strict tidy의 빈 catch는 unwind verdict assertion으로 해소했고 ld가 요구하는 __wrap_ 테스트 심볼에만 근거를 붙인 예약 식별자 주석을 적용했다. 자동 commit/push 없이 현재 폴더에 보관한다. A8은 다음 사용자 지시 후 진행하며 IPS 완성 뒤 자체 테스트와 AI 착수 지시 조건을 유지한다. 아래 A0~A6는 각 단계 당시 기록이다.
+
 ## A6 최종 판정 — 2026-11-08
 
 **완료.** [A6 설계](superpowers/specs/2026-11-08-a6-design.md)와 [계획](superpowers/plans/2026-11-08-a6.md)에 따라 실제 live source를 기존 Engine에 연결했다. 최종 Debug·Release/clang-tidy·ASan/UBSan은 동일238개 각각 전부 통과했고 실패·disabled·skip0, 포맷 검사도 통과했다. 각 빌드의 별도 격리망 실제11시나리오도 통과했다. [A6 실행 증거](a6-validation-2026-11-08.json)에 JUnit·명령·해시·실제 JSONL과 리뷰 수정 내역을 기록한다.

@@ -27,6 +27,7 @@ std::string_view event_action_name(EventAction action) noexcept;
 
 struct EventContext {
     CaptureMode mode{CaptureMode::Pcap};
+    bool enforced{};
     std::optional<std::chrono::microseconds> captured_at;
     std::optional<std::uint64_t> packet_number;
     std::optional<std::uint64_t> flow_id;

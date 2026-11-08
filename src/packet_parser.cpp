@@ -28,7 +28,7 @@ std::uint32_t read_u32(std::span<const std::byte> bytes, std::size_t offset) noe
 }  // namespace
 
 ParseResult parse_packet(const PacketEnvelope& envelope) noexcept {
-    if (envelope.layer != PacketLayer::Ethernet) {
+    if (envelope.layer != PacketLayer::Ethernet && envelope.layer != PacketLayer::Ipv4) {
         return ParseError::UnsupportedLinkLayer;
     }
     const auto frame = envelope.bytes;
@@ -38,14 +38,16 @@ ParseResult parse_packet(const PacketEnvelope& envelope) noexcept {
     if (frame.size() < envelope.original_length) {
         return ParseError::TruncatedCapture;
     }
-    if (frame.size() < ETHERNET_HEADER_BYTES) {
-        return ParseError::TruncatedEthernet;
+    auto ip = frame;
+    if (envelope.layer == PacketLayer::Ethernet) {
+        if (frame.size() < ETHERNET_HEADER_BYTES) {
+            return ParseError::TruncatedEthernet;
+        }
+        if (read_u16(frame, 12) != 0x0800) {
+            return ParseError::UnsupportedEtherType;
+        }
+        ip = frame.subspan(ETHERNET_HEADER_BYTES);
     }
-    if (read_u16(frame, 12) != 0x0800) {
-        return ParseError::UnsupportedEtherType;
-    }
-
-    auto ip = frame.subspan(ETHERNET_HEADER_BYTES);
     if (ip.size() < IPV4_MIN_HEADER_BYTES) {
         return ParseError::TruncatedIpv4Header;
     }

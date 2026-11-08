@@ -216,6 +216,7 @@ void publish_packet(EventLogger& logger, const PacketResult& result,
             });
         }
     }
+    if (run.mode == CaptureMode::Inline) return;
     emit(logger, [&] {
         const auto* decision = result.decision ? &*result.decision : nullptr;
         const bool drop = decision && decision->action == DetectionAction::Drop;
@@ -299,6 +300,69 @@ void publish_finish(EventLogger& logger, const FinishResult& result,
                 {"sample", "before_close"},
                 {"error", capture ? capture->error.substr(0, 4096) : ""}};
         }
+        if (run.mode == CaptureMode::Inline) {
+            const auto counters = run.queue.value_or(QueueStats{});
+            row.fields["queue_num"] = run.queue_num;
+            row.fields["run_complete"] = run.run_complete;
+            row.fields["stop_reason"] = run.stop_reason;
+            row.fields["simulated_drop_packets"] = 0;
+            row.fields["logical_rule_drop_packets"] = stats.rules.drops;
+            row.fields["actual_drop_packets"] = counters.dropped;
+            row.fields["actual_accept_packets"] = counters.accepted;
+            row.fields["fallback_drop_packets"] = counters.fallback_drops;
+            row.fields["queue_stats"] = {{"callbacks", counters.callbacks},
+                                         {"valid_ids", counters.valid_ids},
+                                         {"attempts", counters.attempts},
+                                         {"accepted", counters.accepted},
+                                         {"dropped", counters.dropped},
+                                         {"failed", counters.failed},
+                                         {"missing_ids", counters.missing_ids},
+                                         {"processing_errors", counters.processing_errors},
+                                         {"receive_errors", counters.receive_errors},
+                                         {"overflow_errors", counters.overflow_errors},
+                                         {"close_errors", counters.close_errors}};
+        }
+        return row;
+    });
+}
+
+void publish_inline_verdict(EventLogger& logger, const PacketResult* result,
+                            const InlineReceipt& receipt, const RunPublication& run) noexcept {
+    emit(logger, [&] {
+        auto context = result ? packet_context(*result, CaptureMode::Inline) : EventContext{};
+        context.mode = CaptureMode::Inline;
+        context.captured_at = receipt.received_at;
+        context.enforced = receipt.attempted && receipt.sent;
+        const auto* decision = result && result->decision ? &*result->decision : nullptr;
+        const bool limited =
+            result && ((result->flow && std::holds_alternative<FlowError>(*result->flow)) ||
+                       (result->reassembly && result->reassembly->issues.any()));
+        const auto status = receipt.fallback                ? "error"
+                            : result && result->parse_error ? "unsupported"
+                            : !result                       ? "unknown"
+                            : limited                       ? "limited"
+                                                            : "parsed";
+        const auto reason =
+            !receipt.sent ? "verdict_send_failed"
+            : receipt.reason == VerdictReason::Decision && result && !result->rules_enabled
+                ? "no_rules"
+                : verdict_reason_name(receipt.reason);
+        auto row = event(
+            EventType::Verdict,
+            receipt.action == QueueAction::Drop ? EventAction::Drop : EventAction::Allow, context,
+            {{"queue_num", run.queue_num},
+             {"queue_packet_id", receipt.id},
+             {"queue_delivery_number", receipt.delivery_number},
+             {"verdict_attempted", receipt.attempted},
+             {"verdict_sent", receipt.sent},
+             {"fallback", receipt.fallback},
+             {"reason", reason},
+             {"inspection_status", status},
+             {"rules_enabled", result ? Json(result->rules_enabled) : Json(nullptr)},
+             {"rule_matches_emitted", decision ? decision->matches.size() : 0},
+             {"rule_matches_suppressed", decision ? decision->suppressed : 0},
+             {"stream_window_available", decision && decision->stream_evaluated}});
+        if (decision && !receipt.fallback) row.sid = decision->terminal_sid;
         return row;
     });
 }

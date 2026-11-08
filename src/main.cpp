@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
         arguments.emplace_back(argv[index]);
     }
 
-    for (std::size_t index = 0; index + 1 < arguments.size(); index += 2) {
+    for (std::size_t index = 0; index + 1 < arguments.size(); ++index) {
         if (arguments[index] == "--log") {
             // Log file limits and a closed JSONL consumer are write failures;
             // retain inspection instead of terminating on the default signal.
@@ -66,8 +66,9 @@ int main(int argc, char* argv[]) {
     try {
         std::optional<LiveSignals> signals;
         miniips::StopRequest stop;
-        for (std::size_t index = 0; index + 1 < arguments.size(); index += 2) {
-            if (arguments[index] == "--mode" && arguments[index + 1] == "live") {
+        for (std::size_t index = 0; index + 1 < arguments.size(); ++index) {
+            if (arguments[index] == "--mode" &&
+                (arguments[index + 1] == "live" || arguments[index + 1] == "inline")) {
                 signals.emplace();
                 stop = []() -> std::optional<miniips::LiveStopReason> {
                     const auto requested = stop_signal;

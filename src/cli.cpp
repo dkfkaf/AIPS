@@ -21,6 +21,7 @@
 #include "miniips/event_publisher.hpp"
 #include "miniips/flow_table.hpp"
 #include "miniips/live_pcap_source.hpp"
+#include "miniips/nfqueue_source.hpp"
 #include "miniips/packet_parser.hpp"
 #include "miniips/rule_engine.hpp"
 #include "miniips/rule_loader.hpp"
@@ -33,6 +34,7 @@ constexpr std::string_view HELP_TEXT =
     "Usage: miniips --help | --version\n"
     "       miniips --mode pcap --input <file.pcap>\n"
     "       miniips --mode live --interface <name>\n"
+    "       miniips --mode inline --queue-num N --enable-inline\n"
     "\n"
     "Options:\n"
     "  --help       Show this help message.\n"
@@ -41,6 +43,8 @@ constexpr std::string_view HELP_TEXT =
     "  --mode live  Inspect an Ethernet interface without blocking traffic.\n"
     "  --interface NAME Select the live capture interface.\n"
     "  --packet-count N Stop live capture after N frames (optional).\n"
+    "  --queue-num N Bind IPv4 NFQUEUE 0..65535 (inline only).\n"
+    "  --enable-inline Explicitly enable real NFQUEUE verdicts.\n"
     "  --input PATH Read packets from this capture file.\n"
     "  --max-flows N Limit active flows (default: 10000).\n"
     "  --flow-idle-timeout-seconds N Expire idle flows (default: 120).\n"
@@ -50,21 +54,25 @@ constexpr std::string_view HELP_TEXT =
     "  --log PATH  Create a new JSONL file; '-' selects JSONL-only stdout.\n"
     "  --rule-state-bytes N Limit stream-rule watermark arrays (default: 33554432).\n"
     "\n"
-    "A6: PCAP/live decisions are simulated (enforced=false); inline is unavailable.\n"
+    "A7: PCAP/live are simulated; inline sends real verdicts without editing firewall rules.\n"
     "Memory limit covers arrays, not total process RSS. Incomplete streams are reported.\n";
 
 constexpr std::int64_t MICROSECONDS_PER_SECOND = 1000000;
 
-std::optional<std::uint64_t> positive_integer(std::string_view text) {
+std::optional<std::uint64_t> unsigned_integer(std::string_view text) {
     if (text.empty()) {
         return std::nullopt;
     }
     std::uint64_t value = 0;
     const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-    if (result.ec != std::errc{} || result.ptr != text.data() + text.size() || value == 0) {
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
         return std::nullopt;
     }
     return value;
+}
+std::optional<std::uint64_t> positive_integer(std::string_view text) {
+    const auto number = unsigned_integer(text);
+    return number && *number > 0 ? number : std::nullopt;
 }
 
 std::string ipv4_text(std::uint32_t address) {
@@ -207,7 +215,9 @@ void print_decision(std::uint64_t packet_number, const FlowResult& flow,
 }
 
 void print_summary(const EngineStats& stats, std::ostream& output, CaptureMode mode) {
-    output << (mode == CaptureMode::Pcap ? "pcap_summary packets=" : "live_summary packets=")
+    output << (mode == CaptureMode::Pcap   ? "pcap_summary packets="
+               : mode == CaptureMode::Live ? "live_summary packets="
+                                           : "inline_summary packets=")
            << stats.packets << " parsed=" << stats.parsed << " skipped=" << stats.skipped << '\n';
     output << "flow_summary created=" << stats.flow.created << " active=" << stats.flow.active
            << " expired=" << stats.flow.expired << " rejected=" << stats.flow.rejected << '\n';
@@ -220,7 +230,8 @@ void print_summary(const EngineStats& stats, std::ostream& output, CaptureMode m
         const auto& detection = stats.rules;
         output << "detection_summary packets=" << detection.packets_evaluated
                << " events=" << detection.events_emitted << " suppressed=" << detection.suppressed
-               << " simulated_drops=" << detection.drops << " active=" << detection.active_flows
+               << (mode == CaptureMode::Inline ? " logical_drops=" : " simulated_drops=")
+               << detection.drops << " active=" << detection.active_flows
                << " state_bytes=" << detection.state_bytes
                << " peak_state_bytes=" << detection.peak_state_bytes
                << " mode=" << capture_mode_name(mode) << " enforced=false\n";
@@ -237,7 +248,7 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
                     const std::string& rule_path, RuleEngineConfig rule_config,
                     const std::string& log_path, std::ostream& output, std::ostream& errors,
                     CaptureMode mode, std::optional<std::uint64_t> packet_limit,
-                    const StopRequest& stop) {
+                    const StopRequest& stop, std::optional<std::uint32_t> queue_num) {
     try {
         std::optional<RuleSet> rules;
         if (!rule_path.empty()) rules = load_rule_file(rule_path);
@@ -255,8 +266,10 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
         RunPublication run;
         run.mode = mode;
         run.interface = mode == CaptureMode::Live ? path : "";
+        run.queue_num = queue_num.value_or(0);
         run.stop_reason = "error";
         std::optional<LivePcapSource> live;
+        std::optional<NfqueueSource> queue;
         const auto report_log_failure = [&] {
             if (logger && logger->failed() && !log_reported) {
                 log_reported = true;
@@ -265,10 +278,7 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
             }
         };
         try {
-            const PacketHandler consume = [&](const PacketEnvelope& envelope) {
-                const auto result = engine.inspect(envelope);
-                if (logger) publish_packet(*logger, result, run);
-                if (mode == CaptureMode::Live) report_log_failure();
+            const auto render_result = [&](const PacketResult& result) {
                 if (!json_stdout) {
                     for (const auto& ended : result.expired) print_ended(ended, output);
                     if (result.packet && result.flow && !result.processing_error) {
@@ -297,7 +307,39 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
                     throw std::runtime_error("Output stream failed.");
                 }
             };
-            if (mode == CaptureMode::Live) {
+            const PacketHandler consume = [&](const PacketEnvelope& envelope) {
+                const auto result = engine.inspect(envelope);
+                if (logger) publish_packet(*logger, result, run);
+                if (mode == CaptureMode::Live) report_log_failure();
+                render_result(result);
+            };
+            if (mode == CaptureMode::Inline) {
+                queue.emplace(QueueConfig{run.queue_num, true, 1024});
+                errors << "inline_ready queue_num=" << run.queue_num << " mode=inline\n";
+                errors.flush();
+                if (!errors) throw std::runtime_error("Output stream failed.");
+                const auto reason = queue->run(
+                    [&](const PacketEnvelope& envelope) { return engine.inspect(envelope); },
+                    [&](const PacketResult* result, const InlineReceipt& receipt) {
+                        if (logger) {
+                            if (result) publish_packet(*logger, *result, run);
+                            publish_inline_verdict(*logger, result, receipt, run);
+                        }
+                        report_log_failure();
+                        if (!json_stdout) {
+                            output << "nfqueue_verdict id=" << receipt.id << " action="
+                                   << (receipt.action == QueueAction::Drop ? "drop" : "allow")
+                                   << " sent=" << (receipt.sent ? 1 : 0)
+                                   << " enforced=" << (receipt.sent ? 1 : 0) << '\n';
+                        }
+                        if (result) render_result(*result);
+                        if ((!json_stdout && !output) || !errors)
+                            throw std::runtime_error("Output stream failed.");
+                    },
+                    stop, packet_limit);
+                run.stop_reason = live_stop_name(reason);
+                run.run_complete = true;
+            } else if (mode == CaptureMode::Live) {
                 live.emplace(LiveCaptureConfig{path, packet_limit});
                 if (!live->activation_warning().empty()) {
                     errors << "capture_warning: " << live->activation_warning() << '\n';
@@ -325,8 +367,24 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
             }
         }
         if (live) run.capture = live->snapshot_stats();
+        if (queue) {
+            if (!queue->close()) {
+                aborted = true;
+                run.run_complete = false;
+                run.stop_reason = "error";
+                errors << "queue_error: NFQUEUE close failed.\n";
+                if (logger) {
+                    EventContext context;
+                    context.mode = mode;
+                    context.captured_at = engine.stats().watermark;
+                    publish_error(*logger, context,
+                                  {"nfqueue", "close_failed", "NFQUEUE close failed."});
+                }
+            }
+            run.queue = queue->stats();
+        }
         const auto ended = engine.finish(aborted                     ? EngineEnd::Aborted
-                                         : mode == CaptureMode::Live ? EngineEnd::Stopped
+                                         : mode != CaptureMode::Pcap ? EngineEnd::Stopped
                                                                      : EngineEnd::Eof);
         if (logger) publish_finish(*logger, ended, run);
         if (!json_stdout && !aborted) {
@@ -343,6 +401,17 @@ int analyze_capture(const std::string& path, FlowTableConfig config, TcpReassemb
                     << " ps_ifdrop=" << capture.interface_dropped
                     << " ifdrop_availability=platform_dependent"
                     << " stop_reason=" << run.stop_reason << '\n';
+        }
+        if (mode == CaptureMode::Inline && run.queue) {
+            auto& summary = json_stdout ? errors : output;
+            const auto& counters = *run.queue;
+            summary << "nfqueue_summary callbacks=" << counters.callbacks
+                    << " valid_ids=" << counters.valid_ids << " attempts=" << counters.attempts
+                    << " accepted=" << counters.accepted << " dropped=" << counters.dropped
+                    << " failed=" << counters.failed
+                    << " fallback_drops=" << counters.fallback_drops
+                    << " missing_ids=" << counters.missing_ids
+                    << " close_errors=" << counters.close_errors << '\n';
         }
         bool log_complete = true;
         if (logger) {
@@ -387,7 +456,7 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
         output << "miniips " << MINIIPS_VERSION << '\n';
         return 0;
     }
-    if (arguments.size() < 4 || arguments.size() % 2 != 0) {
+    if (arguments.size() < 4) {
         return usage_error(errors);
     }
 
@@ -395,6 +464,8 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
     std::string_view input;
     std::string_view interface;
     std::optional<std::uint64_t> packet_limit;
+    std::optional<std::uint32_t> queue_num;
+    bool enable_inline = false;
     FlowTableConfig config;
     TcpReassemblyConfig tcp_config;
     RuleEngineConfig rule_config;
@@ -405,9 +476,15 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
     bool tcp_stream_seen = false;
     bool tcp_memory_seen = false;
     bool rule_state_seen = false;
-    for (std::size_t index = 0; index < arguments.size(); index += 2) {
-        const auto option = arguments[index];
-        const auto value = arguments[index + 1];
+    for (std::size_t index = 0; index < arguments.size();) {
+        const auto option = arguments[index++];
+        if (option == "--enable-inline") {
+            if (enable_inline) return usage_error(errors);
+            enable_inline = true;
+            continue;
+        }
+        if (index == arguments.size()) return usage_error(errors);
+        const auto value = arguments[index++];
         if (value.empty() || value.starts_with("--")) {
             return usage_error(errors);
         }
@@ -420,6 +497,10 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
         } else if (option == "--packet-count" && !packet_limit) {
             packet_limit = positive_integer(value);
             if (!packet_limit) return usage_error(errors);
+        } else if (option == "--queue-num" && !queue_num) {
+            const auto number = unsigned_integer(value);
+            if (!number || *number > 65535) return usage_error(errors);
+            queue_num = static_cast<std::uint32_t>(*number);
         } else if (option == "--max-flows" && !max_flows_seen) {
             const auto number = positive_integer(value);
             if (!number || *number > std::numeric_limits<std::size_t>::max()) {
@@ -466,7 +547,11 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
             return usage_error(errors);
         }
     }
-    if ((mode != "pcap" && mode != "live") || (rule_state_seen && rule_path.empty()) ||
+    if ((mode != "pcap" && mode != "live" && mode != "inline") ||
+        (rule_state_seen && rule_path.empty()) ||
+        (mode != "inline" && (queue_num || enable_inline)) ||
+        (mode == "inline" &&
+         (!queue_num || !enable_inline || !input.empty() || !interface.empty())) ||
         (mode == "pcap" && (input.empty() || !interface.empty() || packet_limit)) ||
         (mode == "live" && (interface.empty() || !input.empty()))) {
         return usage_error(errors);
@@ -475,8 +560,11 @@ int run_cli(std::span<const std::string_view> arguments, std::ostream& output, s
     rule_config.max_flows = config.max_entries;
     return analyze_capture(std::string{mode == "pcap" ? input : interface}, config, tcp_config,
                            std::string{rule_path}, rule_config, std::string{log_path}, output,
-                           errors, mode == "pcap" ? CaptureMode::Pcap : CaptureMode::Live,
-                           packet_limit, stop);
+                           errors,
+                           mode == "pcap"   ? CaptureMode::Pcap
+                           : mode == "live" ? CaptureMode::Live
+                                            : CaptureMode::Inline,
+                           packet_limit, stop, queue_num);
 }
 
 }  // namespace miniips
