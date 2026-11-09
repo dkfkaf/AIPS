@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {"sid":8000,"enabled":true,"priority":0,"action":"pass","protocol":"tcp","scope":"packet","content":"SAFE","message":"Synthetic TCP packet pass"},
+    {"sid":8002,"enabled":true,"priority":10,"action":"alert","protocol":"tcp","scope":"packet","content":"NOTICE","message":"Synthetic TCP packet alert"},
+    {"sid":8001,"enabled":true,"priority":20,"action":"drop","protocol":"tcp","scope":"packet","content":"BLOCKME","message":"Synthetic TCP packet drop"},
+    {"sid":8003,"enabled":true,"priority":30,"action":"drop","protocol":"tcp","scope":"stream","content":"HELLO","message":"Synthetic TCP stream drop"},
+    {"sid":7000,"enabled":true,"priority":0,"action":"pass","protocol":"udp","scope":"packet","content":"SAFE","message":"Synthetic UDP packet pass"},
+    {"sid":7002,"enabled":true,"priority":10,"action":"alert","protocol":"udp","scope":"packet","content":"NOTICE","message":"Synthetic UDP packet alert"},
+    {"sid":7001,"enabled":true,"priority":20,"action":"drop","protocol":"udp","scope":"packet","content":"BLOCKME","message":"Synthetic UDP packet drop"}
+  ]
+}

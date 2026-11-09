@@ -111,6 +111,7 @@ if(MINIIPS_CLANG_FORMAT)
             include/miniips/nfqueue_source.hpp src/nfqueue_source.cpp
             tests/test_cli_inline.cpp tests/test_nfqueue_config.cpp
             tests/test_nfqueue_lifecycle.cpp
+            tests/test_engine_robustness.cpp
             tests/test_live_source.cpp tests/test_live_metadata.cpp tests/test_cli_live.cpp
             include/miniips/event_publisher.hpp src/event_publisher.cpp tests/test_event_publisher.cpp
             tests/test_cli_jsonl.cpp

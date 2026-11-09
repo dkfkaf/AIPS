@@ -1,0 +1,595 @@
+{
+  "stage": "A8",
+  "measured_at_utc": "2026-11-09T01:33:07.377472+00:00",
+  "path": "C++ CLI PCAP->Engine->JSONL stdout /dev/null, no AI",
+  "packets": 50000,
+  "bidirectional_flows": 128,
+  "frame_bytes": 5687500,
+  "pcap_bytes": 6487524,
+  "input_sha256": "56e5b8a76c2a533f5c1b081b7f40b8ccab9748717558f90e8c9eb30a85d8b1df",
+  "binary_sha256": "3e7bb48d9c0d164e6bbb2f36ecf6ccbd84f69afb7c94372204adb61ec7ace012",
+  "rules_sha256": "09df84f8ff0e4781cfd3a5b8af4656bf323b78fe1ab72a9bda0a3b99c20064b8",
+  "warmup_per_case": 1,
+  "trials_per_case": 5,
+  "environment": {
+    "uname": [
+      "Linux",
+      "kwc",
+      "6.18.54.1-microsoft-standard-WSL2",
+      "#1 SMP PREEMPT_DYNAMIC Tue Oct  6 19:13:07 UTC 2026",
+      "x86_64",
+      "x86_64"
+    ],
+    "cpu": "Intel(R) Core(TM) i3-10100F CPU @ 3.60GHz",
+    "available_cpus": 8,
+    "mem_total": "MemTotal:        3958460 kB",
+    "os_release": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+    "python": "3.12.3",
+    "gnu_time": "time (GNU Time) UNKNOWN",
+    "input_storage": "system temporary directory (page cache warmed)",
+    "binary_path": "/mnt/c/Users/purt1/OneDrive/Desktop/AIPS/build-release/miniips"
+  },
+  "limits": [
+    "synthetic UDP and seven synthetic rules, no attack dataset or accuracy claim",
+    "startup, PCAP reads, Flow, rule matching and JSON serialization included",
+    "amortized wall/N is not individual packet latency or p99",
+    "not NFQUEUE/live/wire throughput; no CPU pinning or cache eviction",
+    "GNU time RSS is each child maximum, not Python/global cumulative RSS"
+  ],
+  "results": [
+    {
+      "case": "no_rules",
+      "warmup_excluded": {
+        "ordinal": "warmup",
+        "wall_seconds": 0.817374504,
+        "packets_per_second": 61171.470060925705,
+        "amortized_wall_us_per_packet": 16.34749008,
+        "child_user_seconds": 0.75,
+        "child_system_seconds": 0.01,
+        "child_max_rss_kib": 6340,
+        "summaries": {
+          "pcap_summary": {
+            "packets": "50000",
+            "parsed": "50000",
+            "skipped": "0"
+          },
+          "flow_summary": {
+            "created": "128",
+            "active": "128",
+            "expired": "0",
+            "rejected": "0"
+          },
+          "reassembly_summary": {
+            "bytes_emitted": "0",
+            "overlap_conflicts": "0",
+            "rejected": "0",
+            "active": "0",
+            "memory_bytes": "0",
+            "peak_memory_bytes": "0"
+          },
+          "logger_summary": {
+            "attempted": "50257",
+            "written": "50257",
+            "failed": "0",
+            "dropped": "0",
+            "io_errors": "0",
+            "alert_events_written": "0",
+            "log_complete": "1"
+          }
+        }
+      },
+      "trials": [
+        {
+          "ordinal": 0,
+          "wall_seconds": 0.66570176,
+          "packets_per_second": 75108.70934155259,
+          "amortized_wall_us_per_packet": 13.314035200000001,
+          "child_user_seconds": 0.63,
+          "child_system_seconds": 0.01,
+          "child_max_rss_kib": 6336,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "logger_summary": {
+              "attempted": "50257",
+              "written": "50257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "0",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 1,
+          "wall_seconds": 0.665446706,
+          "packets_per_second": 75137.4971867394,
+          "amortized_wall_us_per_packet": 13.30893412,
+          "child_user_seconds": 0.62,
+          "child_system_seconds": 0.0,
+          "child_max_rss_kib": 6240,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "logger_summary": {
+              "attempted": "50257",
+              "written": "50257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "0",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 2,
+          "wall_seconds": 0.665356139,
+          "packets_per_second": 75147.72475857474,
+          "amortized_wall_us_per_packet": 13.30712278,
+          "child_user_seconds": 0.64,
+          "child_system_seconds": 0.01,
+          "child_max_rss_kib": 6232,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "logger_summary": {
+              "attempted": "50257",
+              "written": "50257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "0",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 3,
+          "wall_seconds": 0.665238071,
+          "packets_per_second": 75161.06215153763,
+          "amortized_wall_us_per_packet": 13.30476142,
+          "child_user_seconds": 0.63,
+          "child_system_seconds": 0.0,
+          "child_max_rss_kib": 6496,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "logger_summary": {
+              "attempted": "50257",
+              "written": "50257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "0",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 4,
+          "wall_seconds": 0.665181351,
+          "packets_per_second": 75167.47113374801,
+          "amortized_wall_us_per_packet": 13.30362702,
+          "child_user_seconds": 0.64,
+          "child_system_seconds": 0.0,
+          "child_max_rss_kib": 6344,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "logger_summary": {
+              "attempted": "50257",
+              "written": "50257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "0",
+              "log_complete": "1"
+            }
+          }
+        }
+      ],
+      "median_pps": 75147.72475857474,
+      "min_pps": 75108.70934155259,
+      "max_pps": 75167.47113374801,
+      "median_amortized_us_per_packet": 13.30712278,
+      "peak_child_rss_kib": 6496
+    },
+    {
+      "case": "fixed_rules",
+      "warmup_excluded": {
+        "ordinal": "warmup",
+        "wall_seconds": 0.916034393,
+        "packets_per_second": 54583.10340974283,
+        "amortized_wall_us_per_packet": 18.32068786,
+        "child_user_seconds": 0.9,
+        "child_system_seconds": 0.0,
+        "child_max_rss_kib": 6784,
+        "summaries": {
+          "pcap_summary": {
+            "packets": "50000",
+            "parsed": "50000",
+            "skipped": "0"
+          },
+          "flow_summary": {
+            "created": "128",
+            "active": "128",
+            "expired": "0",
+            "rejected": "0"
+          },
+          "reassembly_summary": {
+            "bytes_emitted": "0",
+            "overlap_conflicts": "0",
+            "rejected": "0",
+            "active": "0",
+            "memory_bytes": "0",
+            "peak_memory_bytes": "0"
+          },
+          "detection_summary": {
+            "packets": "50000",
+            "events": "37500",
+            "suppressed": "0",
+            "simulated_drops": "12500",
+            "active": "0",
+            "state_bytes": "0",
+            "peak_state_bytes": "0",
+            "mode": "pcap",
+            "enforced": "false"
+          },
+          "logger_summary": {
+            "attempted": "75257",
+            "written": "75257",
+            "failed": "0",
+            "dropped": "0",
+            "io_errors": "0",
+            "alert_events_written": "25000",
+            "log_complete": "1"
+          }
+        }
+      },
+      "trials": [
+        {
+          "ordinal": 0,
+          "wall_seconds": 0.965936555,
+          "packets_per_second": 51763.234077004156,
+          "amortized_wall_us_per_packet": 19.3187311,
+          "child_user_seconds": 0.92,
+          "child_system_seconds": 0.01,
+          "child_max_rss_kib": 6492,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "detection_summary": {
+              "packets": "50000",
+              "events": "37500",
+              "suppressed": "0",
+              "simulated_drops": "12500",
+              "active": "0",
+              "state_bytes": "0",
+              "peak_state_bytes": "0",
+              "mode": "pcap",
+              "enforced": "false"
+            },
+            "logger_summary": {
+              "attempted": "75257",
+              "written": "75257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "25000",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 1,
+          "wall_seconds": 0.916311992,
+          "packets_per_second": 54566.56732262869,
+          "amortized_wall_us_per_packet": 18.32623984,
+          "child_user_seconds": 0.89,
+          "child_system_seconds": 0.02,
+          "child_max_rss_kib": 6548,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "detection_summary": {
+              "packets": "50000",
+              "events": "37500",
+              "suppressed": "0",
+              "simulated_drops": "12500",
+              "active": "0",
+              "state_bytes": "0",
+              "peak_state_bytes": "0",
+              "mode": "pcap",
+              "enforced": "false"
+            },
+            "logger_summary": {
+              "attempted": "75257",
+              "written": "75257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "25000",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 2,
+          "wall_seconds": 0.916153699,
+          "packets_per_second": 54575.99533197977,
+          "amortized_wall_us_per_packet": 18.32307398,
+          "child_user_seconds": 0.9,
+          "child_system_seconds": 0.0,
+          "child_max_rss_kib": 6492,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "detection_summary": {
+              "packets": "50000",
+              "events": "37500",
+              "suppressed": "0",
+              "simulated_drops": "12500",
+              "active": "0",
+              "state_bytes": "0",
+              "peak_state_bytes": "0",
+              "mode": "pcap",
+              "enforced": "false"
+            },
+            "logger_summary": {
+              "attempted": "75257",
+              "written": "75257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "25000",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 3,
+          "wall_seconds": 0.966418846,
+          "packets_per_second": 51737.401652450804,
+          "amortized_wall_us_per_packet": 19.32837692,
+          "child_user_seconds": 0.95,
+          "child_system_seconds": 0.0,
+          "child_max_rss_kib": 6624,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "detection_summary": {
+              "packets": "50000",
+              "events": "37500",
+              "suppressed": "0",
+              "simulated_drops": "12500",
+              "active": "0",
+              "state_bytes": "0",
+              "peak_state_bytes": "0",
+              "mode": "pcap",
+              "enforced": "false"
+            },
+            "logger_summary": {
+              "attempted": "75257",
+              "written": "75257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "25000",
+              "log_complete": "1"
+            }
+          }
+        },
+        {
+          "ordinal": 4,
+          "wall_seconds": 0.915855376,
+          "packets_per_second": 54593.772456056424,
+          "amortized_wall_us_per_packet": 18.31710752,
+          "child_user_seconds": 0.89,
+          "child_system_seconds": 0.01,
+          "child_max_rss_kib": 6784,
+          "summaries": {
+            "pcap_summary": {
+              "packets": "50000",
+              "parsed": "50000",
+              "skipped": "0"
+            },
+            "flow_summary": {
+              "created": "128",
+              "active": "128",
+              "expired": "0",
+              "rejected": "0"
+            },
+            "reassembly_summary": {
+              "bytes_emitted": "0",
+              "overlap_conflicts": "0",
+              "rejected": "0",
+              "active": "0",
+              "memory_bytes": "0",
+              "peak_memory_bytes": "0"
+            },
+            "detection_summary": {
+              "packets": "50000",
+              "events": "37500",
+              "suppressed": "0",
+              "simulated_drops": "12500",
+              "active": "0",
+              "state_bytes": "0",
+              "peak_state_bytes": "0",
+              "mode": "pcap",
+              "enforced": "false"
+            },
+            "logger_summary": {
+              "attempted": "75257",
+              "written": "75257",
+              "failed": "0",
+              "dropped": "0",
+              "io_errors": "0",
+              "alert_events_written": "25000",
+              "log_complete": "1"
+            }
+          }
+        }
+      ],
+      "median_pps": 54566.56732262869,
+      "min_pps": 51737.401652450804,
+      "max_pps": 54593.772456056424,
+      "median_amortized_us_per_packet": 18.32623984,
+      "peak_child_rss_kib": 6784
+    }
+  ]
+}

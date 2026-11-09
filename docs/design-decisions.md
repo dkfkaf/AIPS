@@ -1,5 +1,18 @@
 # 설계 결정
 
+## A8 종합 검증 — 2026-11-09
+
+사용자 A8 지시로 [기존 계획](../IMPLEMENTATION_PLAN.md)의 종합 검증·문서화와 성능 기준을 실행한다. 기존 C++ 엔진 경로를 재사용하고 A7 증거는 보존한다. 새 기능/AI 단계로 범위를 넓히지 않는다.
+
+- 고정 시드 mixed input은 이미 있는 Engine의 bounded Flow/TCP/룰 상태와 종료 해제를 검사한다. test-only enum 크기 경고도 strict tidy 기준으로 수정하며 검사를 끄지 않는다.
+- TCP 실제 시험은 OS socket과 NFQUEUE를 사용한다. 재전송·FIN/ACK에 고정 packet count를 강요하지 않고 endpoint bytes·SID/action·유효 ID/시도/성공/실패 카운터를 검증한다. TCP 시험 뒤 자체 chain만 정리해 지연 재전송이 UDP 압박을 오염시키지 않게 한다.
+- 실제 수신 압박으로 확인한 overflow 분류 결함은 SO_ERROR 확인과 recvmsg ENOBUFS 계수로 수정했다. 기타 socket 오류는 overflow를 꾸며내지 않는다. 판정 재시도/미지원 허용/처리 오류 Drop 정책은 유지한다.
+- 벤치마크는 별도 가짜 엔진 대신 실제 Release CLI PCAP→Engine→JSONL /dev/null을 측정한다. 시간 범위와 synthetic 규칙을 명시하고 입력 생성/초기 warm-up은 측정에서 제외한다. 기존 출력 파일을 덮어쓰지 않고 실행 카운터가 맞지 않으면 보고서를 성공으로 쓰지 않는다.
+- GNU time의 자식 최대 RSS/CPU와 부모의 monotonic wall을 저장한다. timeout이 GNU time만 죽이고 miniips를 남기지 않도록 독립 프로세스 그룹을 finally에서 종료/회수한다. 제어된 하위 프로세스 시험으로 RED→GREEN을 확인했다.
+- [Flow 관찰 계약](flow-observation.md)은 이미 구현된 API만 문서화한다. 후속16특징 추출기/전처리/UDS는 구현하지 않는다. 합성 기준 룰은 해시로 고정하고 실제 보안 탐지율로 일반화하지 않는다.
+
+전체 검사/실제 격리 시나리오·성능 보고서·독립 리뷰·해시 확인을 완료해 A8/A단계 개발자 인수를 판정했다. 신규 리뷰 결함은0건이며 기존 A5/A6 한계는 유지한다. 자동 commit/push 없이 현재 폴더에 보관하고 사용자 자체 IPS 테스트 결과 확인과 명시적 AI 착수 지시를 기다린다.
+
 ## A7 NFQUEUE — 2026-11-08
 
 사용자 A7 요청에 따라 [설계](superpowers/specs/2026-11-08-a7-design.md)와 [계획](superpowers/plans/2026-11-08-a7.md)을 실행한다. 독립 설계 검토의 예산 구분 질문을 해결했다. fatal은 processing_error/예외이며, Flow/TCP 제한은 기존 제한 검사 의미를 유지한다. 개별 기본값을 별도 사용자 승인으로 주장하지 않는다.

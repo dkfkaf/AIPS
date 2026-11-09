@@ -2,11 +2,22 @@
 
 C++20 경량 IDS/IPS 엔진과 후속 Python/PyTorch 보조 탐지기를 만드는 교육·연구용 프로젝트다. Suricata에서 영감을 얻은 독립 구현이다.
 
-**현재 상태(2026-11-08): A0~A7 검증 완료.** NFQUEUE를 공통 Engine·JSONL에 연결했고 격리 실험의4패킷 중3개 실제 허용·1개 실제 차단을 확인했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 각각257/257, 실패·skip0과 포맷 검사를 통과했고 각 빌드의 실제 NFQUEUE14개·라이브 IDS11개 시나리오도 통과했다. 독립 리뷰 중요1건(종료 callback 실패의 정상 완료 보고)을 오류 주입 회귀로 수정했다. 경미1건은 [한계](docs/known-limitations.md)에 보류했다. [검증 기록](docs/test-plan.md)과 [A7 실행 증거](docs/a7-validation-2026-11-08.json)를 참고한다. 다음은 사용자 지시 후 A8 종합 검증·문서화이며 사용자 자체 테스트와 AI 착수 지시를 기다린다.
+**현재 상태(2026-11-09): C++ IPS A0~A8 개발자 검증 완료.** 최종 Debug·Release/clang-tidy·ASan/UBSan에서 동일262개 각각 전부 통과했고 실패·disabled·skip0 및 포맷 통과를 확인했다. 각 빌드의 격리 live11/NFQUEUE14/TCP·압박4시나리오도 통과했다. 기준 성능·F-01~F-06 인수 증거·실행 가이드를 저장했고 독립 최종 리뷰에서 신규 결함0건이었다. [A8 실행 증거](docs/a8-validation-2026-11-09.json)와 [사용자 자체 테스트 가이드](docs/ips-test-guide.md)를 참고한다. 다음은 사용자 자체 IPS 테스트·결과 확인이며, 명시적 AI 착수 지시 전에는 AI 개발을 시작하지 않는다.
 
 앞서 발생했던 WSL 설치 오류와 도구 부재는 [환경 복구 전 기록](docs/a0-validation-2026-11-05.json)에, 복구 후 실제 명령과 결과는 [Linux 실행 기록](docs/a0-validation-2026-11-05-linux.json)에 보관한다.
 
 작업 규칙은 [AGENTS.md](AGENTS.md), 기능 계약은 [PROJECT_SPEC.md](PROJECT_SPEC.md), 개발 단계는 [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), 코드 규칙은 [CODING_STYLE.md](CODING_STYLE.md)를 따른다.
+
+## A8 종합 검증·사용자 테스트 준비 — 2026-11-09
+
+**완료.** Debug·Release/clang-tidy·ASan/UBSan에서 동일262개 테스트와 각 빌드의 격리 live11/NFQUEUE14/추가 TCP·압박4시나리오를 통과했다. 고정 시드12000개 혼합 손상 입력, 실제 TCP packet Drop 및 HEL 전달 뒤 LO stream Drop, reader 정지 후 수신 오류 종료를 확인했다. 수신 overflow 분류 누락과 측정기 시간 초과 자식 정리를 각각 RED→GREEN으로 수정했다. 독립 최종 리뷰1회는 Critical0/Important0/Minor0이며 재리뷰 없이 최종 해시·링크를 확인했다.
+
+- [사용자 자체 IPS 테스트 가이드](docs/ips-test-guide.md): 새 환경 빌드, PCAP→격리 live→격리 inline, 로그/종료 코드 해석, 결과 전달 양식.
+- [Flow 관찰 인터페이스](docs/flow-observation.md): 이미 구현된 방향·IP byte·IAT·시각·만료와 snapshot 소유권.
+- [기준 성능 보고서](docs/a8-performance-2026-11-09.json): Release 합성 UDP50000개/128 Flow, 룰 없음/고정 룰 warm-up 후5회씩, CPU/최대 RSS/평균 환산 비용. 실제 회선 성능이나 공격 탐지율의 증거가 아니다.
+- [기능별 인수 표](docs/test-plan.md)와 [A8 실행 증거](docs/a8-validation-2026-11-09.json): F-01~F-06 검사·입력/룰/도구/바이너리 해시·미실행 범위.
+
+다음은 사용자 자체 테스트와 결과 확인이다. 사용자가 AI 착수를 지시하기 전에는 데이터셋 준비·모델 학습·UDS를 시작하지 않는다. 고정 합성 룰 rules/a8-baseline.json을 평가 결과에 맞춰 바꾸지 않는다.
 
 ## A7 NFQUEUE Inline IPS — 2026-11-08
 
@@ -126,9 +137,10 @@ JSON 룰 로더와 KMP 기반 packet/stream 룰 엔진을 구현했다. 중요 �
 - JSON 전체 검증·KMP 검색·우선순위 alert/pass/drop·재전송 이벤트 억제와 제한된 상태 정리.
 - JSONL 이벤트7종, 새 파일/표준 출력, 실패 고정·미기록 집계·최종 flush/close 결과 반영과 sink 없는 공통 Engine.
 - 비차단 라이브 수집·SIGINT/SIGTERM 정지·원시 캡처 수신/유실 통계·packet-count와 PCAP 공통 처리.
-- 일반 CTest238개와 별도 격리망 실제11시나리오를 Debug·Release/clang-tidy·ASan/UBSan에서 각각 통과했다.
+- 명시적 inline 모드의 L3 IPv4 입력·NFQUEUE 실제 허용/차단과 성공 제출 receipt. 바이너리는 방화벽 규칙을 변경하지 않는다.
+- 일반 CTest262개와 별도 격리망 live11/NFQUEUE14/TCP·압박4시나리오를 세 빌드에서 각각 통과했다.
 
-실제 차단·AI·IPC는 후속 단계다.
+AI·IPC는 사용자 자체 IPS 테스트와 명시적 착수 지시 이후 단계다.
 
 ## Linux 개발 의존성
 
@@ -142,7 +154,7 @@ sudo apt-get install -y --no-install-recommends \
   libspdlog-dev libgtest-dev clang-format-18 clang-tidy-18
 ```
 
-libpcap(>= 1.5.1)과 libnetfilter_queue는 pkg-config로, nlohmann/json·spdlog·GoogleTest는 시스템 CMake 패키지로 찾는다. CMake에서 의존성을 다운로드하지 않는다. 일반 빌드·테스트에는 관리자 권한이 필요 없으며 호스트 방화벽을 변경하지 않는다.
+libpcap(>= 1.9.0)과 libnetfilter_queue는 pkg-config로, nlohmann/json·spdlog·GoogleTest는 시스템 CMake 패키지로 찾는다. 프로세스 검증에는 Python3, 성능 측정에는 GNU /usr/bin/time이 필요하다. CMake에서 의존성을 다운로드하지 않는다. 일반 빌드·테스트에는 관리자 권한이 필요 없으며 호스트 방화벽을 변경하지 않는다.
 
 ## 빌드·테스트
 

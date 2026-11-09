@@ -3,11 +3,14 @@
 #include <gtest/gtest.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <linux/netfilter.h>
+#include <poll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #include <cstdint>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,6 +23,7 @@ struct nfq_handle {};
 struct nfq_q_handle {};
 struct nfq_data {};
 namespace {
+enum class ReceiveFault : std::uint8_t { Wait, Datagram };
 struct FakeQueue {
     nfq_handle handle;
     nfq_q_handle queue;
@@ -31,6 +35,8 @@ struct FakeQueue {
     unsigned int sends{}, destroys{};
     std::uint32_t action{};
     bool send_ok{true}, has_id{true};
+    ReceiveFault receive_fault{ReceiveFault::Wait};
+    int socket_error{ENOBUFS};
 };
 FakeQueue state;
 class NfqueueLifecycle : public testing::Test {
@@ -41,6 +47,25 @@ class NfqueueLifecycle : public testing::Test {
 // GNU ld --wrap requires these exact external symbol names.
 // NOLINTBEGIN(bugprone-reserved-identifier)
 extern "C" {
+ssize_t __wrap_recv(int, void*, std::size_t, int) {
+    if (state.receive_fault == ReceiveFault::Wait) {
+        errno = EAGAIN;
+        return -1;
+    }
+    return 1;
+}
+int __wrap_ppoll(pollfd* descriptors, nfds_t, const timespec*, const sigset_t*) {
+    descriptors[0].revents = POLLERR;
+    return 1;
+}
+int __wrap_getsockopt(int, int, int, void* value, socklen_t*) {
+    *static_cast<int*>(value) = state.socket_error;
+    return 0;
+}
+ssize_t __wrap_recvmsg(int, msghdr*, int) {
+    errno = ENOBUFS;
+    return -1;
+}
 nfq_handle* __wrap_nfq_open() {
     state.fd = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
     return &state.handle;
@@ -77,6 +102,29 @@ int __wrap_nfq_set_verdict(nfq_q_handle*, std::uint32_t, std::uint32_t action, s
 
 namespace miniips {
 namespace {
+TEST_F(NfqueueLifecycle, PollSocketOverflowIsClassifiedBeforeErrorExit) {
+    NfqueueSource source({0, true});
+    EXPECT_THROW(source.run([](const PacketEnvelope&) { return PacketResult{}; }, {}),
+                 std::runtime_error);
+    EXPECT_EQ(source.stats().receive_errors, 1);
+    EXPECT_EQ(source.stats().overflow_errors, 1);
+}
+TEST_F(NfqueueLifecycle, DatagramOverflowIsClassifiedBeforeErrorExit) {
+    state.receive_fault = ReceiveFault::Datagram;
+    NfqueueSource source({0, true});
+    EXPECT_THROW(source.run([](const PacketEnvelope&) { return PacketResult{}; }, {}),
+                 std::runtime_error);
+    EXPECT_EQ(source.stats().receive_errors, 1);
+    EXPECT_EQ(source.stats().overflow_errors, 1);
+}
+TEST_F(NfqueueLifecycle, OtherSocketErrorDoesNotInventOverflow) {
+    state.socket_error = EIO;
+    NfqueueSource source({0, true});
+    EXPECT_THROW(source.run([](const PacketEnvelope&) { return PacketResult{}; }, {}),
+                 std::runtime_error);
+    EXPECT_EQ(source.stats().receive_errors, 1);
+    EXPECT_EQ(source.stats().overflow_errors, 0);
+}
 TEST_F(NfqueueLifecycle, SuccessfulShutdownFallbackAllowsRepeatedClose) {
     NfqueueSource source({0, true});
     EXPECT_TRUE(source.close());
@@ -130,3 +178,4 @@ TEST_F(NfqueueLifecycle, ShutdownSendFailureChangesCliCompletionAndExitCode) {
 }
 }  // namespace
 }  // namespace miniips
+#include <cerrno>

@@ -21,6 +21,9 @@ foreach(nfq_function IN ITEMS open bind_pf create_queue set_mode set_queue_maxle
         fd destroy_queue close get_msg_packet_hdr set_verdict)
     target_link_options(miniips_nfqueue_lifecycle_tests PRIVATE "LINKER:--wrap=nfq_${nfq_function}")
 endforeach()
+foreach(queue_syscall IN ITEMS recv ppoll getsockopt recvmsg)
+    target_link_options(miniips_nfqueue_lifecycle_tests PRIVATE "LINKER:--wrap=${queue_syscall}")
+endforeach()
 gtest_discover_tests(miniips_nfqueue_lifecycle_tests PROPERTIES TIMEOUT 10)
 add_executable(miniips_nfqueue_config_tests test_nfqueue_config.cpp)
 target_link_libraries(miniips_nfqueue_config_tests PRIVATE miniips_nfqueue GTest::gtest_main)
@@ -43,7 +46,7 @@ gtest_discover_tests(miniips_publisher_tests PROPERTIES TIMEOUT 10)
 add_executable(miniips_logging_tests test_event_logger.cpp)
 target_link_libraries(miniips_logging_tests PRIVATE miniips_logging GTest::gtest_main)
 gtest_discover_tests(miniips_logging_tests PROPERTIES TIMEOUT 10)
-add_executable(miniips_engine_tests test_engine.cpp)
+add_executable(miniips_engine_tests test_engine.cpp test_engine_robustness.cpp)
 target_link_libraries(miniips_engine_tests PRIVATE miniips_engine GTest::gtest_main)
 gtest_discover_tests(miniips_engine_tests PROPERTIES TIMEOUT 10)
 add_executable(miniips_rule_tests test_rule_loader.cpp test_rule_engine.cpp test_reassembly_ranges.cpp)
@@ -84,6 +87,10 @@ set_tests_properties(pcap.prepare_fixtures PROPERTIES FIXTURES_SETUP pcap_files 
 
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
+    add_test(NAME inline.tcp_guard COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/check_inline_guard.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/check_inline_tcp.py")
+    set_tests_properties(inline.tcp_guard PROPERTIES TIMEOUT 30)
     add_test(NAME inline.guard COMMAND "${Python3_EXECUTABLE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/check_inline_guard.py"
         "${CMAKE_CURRENT_SOURCE_DIR}/check_inline_process.py")

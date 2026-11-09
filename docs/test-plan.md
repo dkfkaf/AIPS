@@ -1,5 +1,37 @@
 # 테스트 계획과 실제 검증
 
+## A8 종합 검증 — 2026-11-09
+
+**A8 및 C++ A단계 개발자 검증 완료.** Debug·Release/strict clang-tidy·ASan/UBSan에서 동일262개 각각 전부 통과, 실패·disabled·skip0, 포맷 통과. 각 빌드의 실제 격리 live11/NFQUEUE14/TCP3·수신 압박1도 모두 통과했다. [설계](superpowers/specs/2026-11-08-a8-design.md), [계획](superpowers/plans/2026-11-08-a8.md), [사용자 자체 테스트 가이드](ips-test-guide.md)를 따른다.
+
+| 필수 기능 | 재현 가능한 검증과 증거 |
+| --- | --- |
+| F-01 수집·파싱 | PacketParser/PcapSource 테스트, live11시나리오, EngineRobustness의 고정 시드12000 정상/손상 Ethernet/L3 입력 |
+| F-02 양방향 Flow | FlowTable의 방향·IP byte/IAT·timeout·capacity 테스트, PCAP flow 시나리오, [관찰 인터페이스](flow-observation.md) |
+| F-03 TCP 재조립 | TcpReassembler/lifecycle/ranges의 분할·역순·재전송·겹침·gap·깊이/메모리 상한, 실제 HEL 전달 후 LO 차단 |
+| F-04 JSON 룰 | RuleLoader/RuleEngine/CLI의 스키마·KMP packet/stream·우선순위 Pass/Alert/Drop, 실제 TCP/UDP 판정 |
+| F-05 실제 차단 | VerdictGuard/NfqueueLifecycle/안전 옵션, 기존 격리 UDP14와 신규 TCP3/수신 압박1, 수신기 관측·중복 없는 receipt·카운터 |
+| F-06 JSONL | EventLogger/Publisher/Engine·jsonl.process, 이벤트7종, 파일 보존/0600·닫힌 stdout·파일 제한, 실제 verdict 전송 후 로그 발행 |
+
+일반 CTest는 기존257+robustness1+새 검증기 안전 회귀1+overflow 오류 주입3=262개다. 안전 회귀는 실제 네트워크 명령 없이 최적화 Python/호스트 namespace를 거부한다. 실제 검사는 기본 CTest 밖의 별도 fresh netns에서만 수행한다. TCP 재전송 횟수는 고정하지 않으며 유효 ID=시도=성공 허용+성공 차단+실패와 receipt 중복 부재를 확인한다.
+
+수신 압박에서 A7 경미 사항인 overflow 원인 통계 누락을 실제 재현했다. poll SO_ERROR/recvmsg ENOBUFS 오류 주입은 수정 전2실패·비overflow 대조1통과였고 수정 후3개 모두 통과했다. 실제 압박도 receive_errors1/overflow_errors1·오류 종료1로 기록했다. SO_ERROR 조회 후 종료 중 받은 callback은 기존 guard로 fallback Drop하며 개별 receipt 공백 정책을 유지한다.
+
+성능 기준은 [A8 측정 보고서](a8-performance-2026-11-09.json)로 저장한다. 합성 UDP50000개/양방향128 Flow, Release CLI PCAP→Engine→JSONL /dev/null, 룰 없음/고정 룰 각각 warm-up1+5회다. 처리/Flow/룰/최종 로그 완료를 검사한다. 측정기의 기존 보고서 보존·잘못된 입력·실패 자식 거부3개와 시간 초과 시 전체 자식 그룹 정리를 별도 검증했다. 시간 초과 회귀는 수정 전 하위 프로세스 잔류를 재현한 뒤 수정 후 정리 성공을 확인했다.
+
+| 측정 조건 | 중앙값 packets/s | wall/N 평균 환산 비용 | 개별 자식 최대 RSS |
+| --- | ---: | ---: | ---: |
+| 룰 없음 | 75147.7 | 13.307 µs/packet | 6496 KiB |
+| 고정 합성 룰 | 54566.6 | 18.326 µs/packet | 6784 KiB |
+
+이 수치는 프로세스 시작·로그 직렬화·관측 대기를 포함하며 실제 회선 처리량이나 패킷별 지연이 아니다. 원격 CI/실제 공격 데이터셋·정확도/지속 부하의 wire 성능·모든 커널 실패·실제 OOM은 미실행이다.
+
+독립 최종 리뷰1회는 Critical0/Important0/Minor0, 최종 리뷰 후 수정 pass0/재리뷰0이다. 기존 A5/A6 한계는 유지한다. A7 소스81개 중77개를 해시로 보존하고4개만 계획대로 변경했으며 신규4개를 포함한85개 소스/검증기와 문서·fixture·바이너리·도구·실행 증거를 기록했다. 가이드의 PCAP2개·help/version4시나리오를 실행했고 첫 PCAP은 uid65534 일반 권한에서 성공했다. A단계 완료 조건12개를 증거와 연결했으며 자동 commit/push 없이 사용자 자체 IPS 테스트·결과 확인·명시적 AI 착수 지시를 기다린다.
+
+룰 기준은 [a8-baseline.json](../rules/a8-baseline.json), SHA256 `09df84f8ff0e4781cfd3a5b8af4656bf323b78fe1ab72a9bda0a3b99c20064b8`이다. 일곱 합성 룰은 동작 확인용이며 실제 공격 탐지율을 주장하지 않는다. C4에서 기준으로 사용할 때 해당 룰/해시·동일 PCAP/라벨/집계 조건을 보존하고 평가 결과에 맞춰 몰래 룰을 변경하지 않는다.
+
+아래 A0~A7는 각 단계 당시의 기록이다. A8 최종 상태는 이 절과 [A8 실행 증거](a8-validation-2026-11-09.json)를 따른다.
+
 ## A7 최종 판정 — 2026-11-08
 
 **완료.** [설계](superpowers/specs/2026-11-08-a7-design.md)와 [계획](superpowers/plans/2026-11-08-a7.md)에 따라 NFQUEUE source/verdict adapter·L3 파서·실제 receipt 발행을 구현했다. 최종 Debug·Release/clang-tidy·ASan/UBSan 동일257개 각각 전부 통과, 실패·disabled·skip0, 포맷 통과. 각 구성의 실제 격리 NFQUEUE14개와 기존 live11개 시나리오도 모두 통과했다. [A7 실행 증거](a7-validation-2026-11-08.json)에 명령·JUnit·입력/도구/바이너리/문서/실행 증거 해시를 기록했다.

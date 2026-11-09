@@ -183,6 +183,15 @@ LiveStopReason NfqueueSource::run(const QueueInspector& inspect, const QueueAfte
             }
             if (ready > 0 && (descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
                 ++impl_->counters.receive_errors;
+                if ((descriptor.revents & POLLERR) != 0) {
+                    int socket_error = 0;
+                    socklen_t length = sizeof(socket_error);
+                    if (::getsockopt(impl_->fd, SOL_SOCKET, SO_ERROR, &socket_error, &length) ==
+                            0 &&
+                        socket_error == ENOBUFS) {
+                        ++impl_->counters.overflow_errors;
+                    }
+                }
                 throw std::runtime_error("NFQUEUE socket failed.");
             }
             continue;
@@ -204,6 +213,7 @@ LiveStopReason NfqueueSource::run(const QueueInspector& inspect, const QueueAfte
         if (count <= 0 || (message.msg_flags & MSG_TRUNC) != 0 || sender.nl_family != AF_NETLINK ||
             sender.nl_pid != 0) {
             ++impl_->counters.receive_errors;
+            impl_->counters.overflow_errors += count < 0 && errno == ENOBUFS ? 1U : 0U;
             throw std::runtime_error("Invalid NFQUEUE netlink datagram.");
         }
         if (nfq_handle_packet(impl_->handle.get(), impl_->buffer.data(), static_cast<int>(count)) <
